@@ -18,7 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const delivery_entity_1 = require("../../entities/delivery.entity");
 const cliente_entity_1 = require("../../entities/cliente.entity");
-const create_delivery_dto_1 = require("./dto/create-delivery.dto");
+const enums_1 = require("../../common/enums");
 let DeliveryService = class DeliveryService {
     deliveryRepository;
     clienteRepository;
@@ -37,7 +37,7 @@ let DeliveryService = class DeliveryService {
         }
         const delivery = this.deliveryRepository.create({
             ...createDeliveryDto,
-            estado: create_delivery_dto_1.EstadoDelivery.PENDIENTE,
+            estado: enums_1.EstadoDelivery.PENDIENTE,
         });
         return this.deliveryRepository.save(delivery);
     }
@@ -49,15 +49,15 @@ let DeliveryService = class DeliveryService {
             take: limit,
             order: { fecha: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findById(id) {
@@ -79,15 +79,15 @@ let DeliveryService = class DeliveryService {
             take: limit,
             order: { fecha: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findByRepartidor(repartidor, paginationDto) {
@@ -99,15 +99,15 @@ let DeliveryService = class DeliveryService {
             take: limit,
             order: { fecha: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findByDateRange(fechaInicio, fechaFin, paginationDto) {
@@ -121,15 +121,15 @@ let DeliveryService = class DeliveryService {
             take: limit,
             order: { fecha: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async update(id, updateDeliveryDto) {
@@ -147,43 +147,43 @@ let DeliveryService = class DeliveryService {
     }
     async asignarRepartidor(id, repartidor) {
         const delivery = await this.findById(id);
-        if (delivery.estado !== create_delivery_dto_1.EstadoDelivery.PENDIENTE) {
+        if (delivery.estado !== enums_1.EstadoDelivery.PENDIENTE) {
             throw new common_1.BadRequestException('Solo se pueden asignar deliveries pendientes');
         }
         await this.deliveryRepository.update(id, {
             repartidor,
-            estado: create_delivery_dto_1.EstadoDelivery.ASIGNADO
+            estado: enums_1.EstadoDelivery.ASIGNADO
         });
         return this.findById(id);
     }
     async marcarEnCamino(id, horaSalida) {
         const delivery = await this.findById(id);
-        if (delivery.estado !== create_delivery_dto_1.EstadoDelivery.ASIGNADO) {
+        if (delivery.estado !== enums_1.EstadoDelivery.ASIGNADO) {
             throw new common_1.BadRequestException('El delivery debe estar asignado para marcarlo en camino');
         }
         await this.deliveryRepository.update(id, {
-            estado: create_delivery_dto_1.EstadoDelivery.EN_CAMINO,
+            estado: enums_1.EstadoDelivery.EN_CAMINO,
             horaSalida
         });
         return this.findById(id);
     }
     async marcarEntregado(id, horaEntrega) {
         const delivery = await this.findById(id);
-        if (delivery.estado !== create_delivery_dto_1.EstadoDelivery.EN_CAMINO) {
+        if (delivery.estado !== enums_1.EstadoDelivery.EN_CAMINO) {
             throw new common_1.BadRequestException('El delivery debe estar en camino para marcarlo como entregado');
         }
         await this.deliveryRepository.update(id, {
-            estado: create_delivery_dto_1.EstadoDelivery.ENTREGADO,
+            estado: enums_1.EstadoDelivery.ENTREGADO,
             horaEntrega
         });
         return this.findById(id);
     }
     async cancelar(id) {
         const delivery = await this.findById(id);
-        if (delivery.estado === create_delivery_dto_1.EstadoDelivery.ENTREGADO) {
+        if (delivery.estado === enums_1.EstadoDelivery.ENTREGADO) {
             throw new common_1.BadRequestException('No se puede cancelar un delivery ya entregado');
         }
-        await this.deliveryRepository.update(id, { estado: create_delivery_dto_1.EstadoDelivery.CANCELADO });
+        await this.deliveryRepository.update(id, { estado: enums_1.EstadoDelivery.CANCELADO });
         return this.findById(id);
     }
     async getDeliveriesDelDia() {
@@ -219,7 +219,7 @@ let DeliveryService = class DeliveryService {
             acc[delivery.repartidor] = (acc[delivery.repartidor] || 0) + 1;
             return acc;
         }, {});
-        const entregados = deliveries.filter(d => d.estado === create_delivery_dto_1.EstadoDelivery.ENTREGADO && d.horaSalida && d.horaEntrega);
+        const entregados = deliveries.filter(d => d.estado === enums_1.EstadoDelivery.ENTREGADO && d.horaSalida && d.horaEntrega);
         let tiempoPromedioEntrega = 0;
         if (entregados.length > 0) {
             const tiempos = entregados.map(d => {
@@ -237,7 +237,7 @@ let DeliveryService = class DeliveryService {
             deliveriesPorRepartidor,
             tiempoPromedioEntrega: Math.round(tiempoPromedioEntrega),
             entregados: entregados.length,
-            cancelados: deliveries.filter(d => d.estado === create_delivery_dto_1.EstadoDelivery.CANCELADO).length,
+            cancelados: deliveries.filter(d => d.estado === enums_1.EstadoDelivery.CANCELADO).length,
         };
     }
     async getRepartidores() {

@@ -9,16 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MovimientoInventario = exports.TipoMovimiento = void 0;
+exports.MovimientoInventario = void 0;
 const typeorm_1 = require("typeorm");
-var TipoMovimiento;
-(function (TipoMovimiento) {
-    TipoMovimiento["ENTRADA"] = "ENTRADA";
-    TipoMovimiento["SALIDA"] = "SALIDA";
-    TipoMovimiento["AJUSTE"] = "AJUSTE";
-    TipoMovimiento["VENTA"] = "VENTA";
-    TipoMovimiento["DEVOLUCION"] = "DEVOLUCION";
-})(TipoMovimiento || (exports.TipoMovimiento = TipoMovimiento = {}));
+const enums_1 = require("../common/enums");
 let MovimientoInventario = class MovimientoInventario {
     id;
     hora;
@@ -28,6 +21,7 @@ let MovimientoInventario = class MovimientoInventario {
     precioVenta;
     existenciaAnterior;
     existenciaNueva;
+    existencia;
     invMinimo;
     tipo;
     cantidad;
@@ -75,12 +69,16 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)('int'),
     __metadata("design:type", Number)
+], MovimientoInventario.prototype, "existencia", void 0);
+__decorate([
+    (0, typeorm_1.Column)('int'),
+    __metadata("design:type", Number)
 ], MovimientoInventario.prototype, "invMinimo", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: TipoMovimiento,
-        default: TipoMovimiento.AJUSTE,
+        enum: enums_1.TipoMovimiento,
+        default: enums_1.TipoMovimiento.AJUSTE,
     }),
     __metadata("design:type", String)
 ], MovimientoInventario.prototype, "tipo", void 0);

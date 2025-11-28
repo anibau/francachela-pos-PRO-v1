@@ -1,7 +1,8 @@
 import { Repository } from 'typeorm';
 import { MovimientoInventario } from '../../entities/movimiento-inventario.entity';
 import { Producto } from '../../entities/producto.entity';
-import { CreateMovimientoDto, TipoMovimiento } from './dto/create-movimiento.dto';
+import { CreateMovimientoDto } from './dto/create-movimiento.dto';
+import { TipoMovimiento } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 export declare class MovimientoInventarioService {

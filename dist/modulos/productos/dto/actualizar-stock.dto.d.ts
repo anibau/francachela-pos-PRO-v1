@@ -1,4 +1,4 @@
-import { TipoMovimiento } from '../../../entities/movimiento-inventario.entity';
+import { TipoMovimiento } from '../../../common/enums';
 export declare class ActualizarStockDto {
     cantidad: number;
     tipo: TipoMovimiento;

@@ -2,17 +2,27 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { Usuario, UserRole } from '../../entities/usuario.entity';
+import { Usuario } from '../../entities/usuario.entity';
 import { Producto } from '../../entities/producto.entity';
 import { Cliente } from '../../entities/cliente.entity';
-import { Promocion, TipoPromocion } from '../../entities/promocion.entity';
+import { Promocion } from '../../entities/promocion.entity';
 import { Combo } from '../../entities/combo.entity';
-import { Venta, EstadoVenta, TipoCompra } from '../../entities/venta.entity';
-import { Caja, EstadoCaja } from '../../entities/caja.entity';
+import { Venta } from '../../entities/venta.entity';
+import { Caja } from '../../entities/caja.entity';
 import { Gasto } from '../../entities/gasto.entity';
-import { Delivery, EstadoDelivery } from '../../entities/delivery.entity';
+import { Delivery } from '../../entities/delivery.entity';
 import { MovimientoInventario } from '../../entities/movimiento-inventario.entity';
-import { TipoMovimiento } from '../../modulos/movimiento-inventario/dto/create-movimiento.dto';
+import { 
+  EstadoVenta, 
+  TipoCompra, 
+  EstadoCaja, 
+  EstadoDelivery, 
+  TipoMovimiento,
+  CategoriaGasto,
+  MetodoPago,
+  TipoPromocion,
+  UserRole
+} from '../../common/enums';
 
 @Injectable()
 export class DatabaseSeeder {
@@ -479,41 +489,41 @@ export class DatabaseSeeder {
         fecha: new Date('2024-01-15 10:30:00'),
         descripcion: 'Compra de servilletas y vasos',
         monto: 25.00,
-        categoria: 'Insumos',
+        categoria: CategoriaGasto.OPERATIVO,
         cajero: 'María González',
-        metodoPago: 'Efectivo'
+        metodoPago: MetodoPago.EFECTIVO
       },
       {
         fecha: new Date('2024-01-15 14:15:00'),
         descripcion: 'Pago de luz',
         monto: 80.00,
-        categoria: 'Servicios',
+        categoria: CategoriaGasto.SERVICIOS,
         cajero: 'María González',
-        metodoPago: 'Transferencia'
+        metodoPago: MetodoPago.TARJETA
       },
       {
         fecha: new Date('2024-01-16 09:45:00'),
         descripcion: 'Limpieza y mantenimiento',
         monto: 45.00,
-        categoria: 'Mantenimiento',
+        categoria: CategoriaGasto.MANTENIMIENTO,
         cajero: 'Carlos Rodríguez',
-        metodoPago: 'Efectivo'
+        metodoPago: MetodoPago.EFECTIVO
       },
       {
         fecha: new Date('2024-01-17 11:20:00'),
         descripcion: 'Compra de hielo',
         monto: 15.00,
-        categoria: 'Insumos',
+        categoria: CategoriaGasto.OPERATIVO,
         cajero: 'María González',
-        metodoPago: 'Efectivo'
+        metodoPago: MetodoPago.EFECTIVO
       },
       {
         fecha: new Date('2024-01-18 16:30:00'),
         descripcion: 'Reparación de refrigeradora',
         monto: 120.00,
-        categoria: 'Mantenimiento',
+        categoria: CategoriaGasto.MANTENIMIENTO,
         cajero: 'Carlos Rodríguez',
-        metodoPago: 'Transferencia'
+        metodoPago: MetodoPago.TARJETA
       }
     ];
 
@@ -538,7 +548,7 @@ export class DatabaseSeeder {
         subTotal: 27.00,
         descuento: 2.70,
         total: 24.30,
-        metodoPago: 'Efectivo',
+        metodoPago: MetodoPago.EFECTIVO,
         cajero: 'María González',
         estado: EstadoVenta.COMPLETADO,
         puntosOtorgados: 24,
@@ -606,7 +616,7 @@ export class DatabaseSeeder {
         subTotal: 38.00,
         descuento: 0.00,
         total: 38.00,
-        metodoPago: 'Efectivo',
+        metodoPago: MetodoPago.EFECTIVO,
         cajero: 'Carlos Rodríguez',
         estado: EstadoVenta.COMPLETADO,
         puntosOtorgados: 38,
@@ -663,7 +673,7 @@ export class DatabaseSeeder {
         estado: EstadoDelivery.EN_CAMINO,
         repartidor: 'Miguel Delivery',
         horaSalida: '18:15',
-        horaEntrega: null,
+        horaEntrega: undefined,
         saleId: 2,
         phone: '912345678',
         deliveryFee: 4.00,
@@ -676,8 +686,8 @@ export class DatabaseSeeder {
         direccion: 'Av. Central 321, Lima',
         estado: EstadoDelivery.ASIGNADO,
         repartidor: 'Carlos Delivery',
-        horaSalida: null,
-        horaEntrega: null,
+        horaSalida: undefined,
+        horaEntrega: undefined,
         saleId: 4,
         phone: '955443322',
         deliveryFee: 6.00
@@ -689,8 +699,8 @@ export class DatabaseSeeder {
         direccion: 'Jr. Independencia 654, Lima',
         estado: EstadoDelivery.PENDIENTE,
         repartidor: '',
-        horaSalida: null,
-        horaEntrega: null,
+        horaSalida: undefined,
+        horaEntrega: undefined,
         saleId: 5,
         phone: '977889900',
         deliveryFee: 5.50,

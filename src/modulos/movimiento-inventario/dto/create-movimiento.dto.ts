@@ -7,12 +7,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-
-export enum TipoMovimiento {
-  ENTRADA = 'ENTRADA',
-  SALIDA = 'SALIDA',
-  AJUSTE = 'AJUSTE'
-}
+import { TipoMovimiento } from '../../../common/enums';
 
 export class CreateMovimientoDto {
   @ApiProperty({ description: 'Código de barras del producto', example: '7501234567890' })
@@ -53,4 +48,3 @@ export class CreateMovimientoDto {
   @IsString()
   proveedor?: string;
 }
-

@@ -1,7 +1,7 @@
 import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { TipoMovimiento } from '../../../entities/movimiento-inventario.entity';
+import { TipoMovimiento } from '../../../common/enums';
 
 export class ActualizarStockDto {
   @ApiProperty({ 
@@ -45,4 +45,3 @@ export class ActualizarStockDto {
   @IsString()
   numeroFactura?: string;
 }
-

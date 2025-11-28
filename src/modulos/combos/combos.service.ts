@@ -44,16 +44,16 @@ export class CombosService {
       order: { nombre: 'ASC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -69,22 +69,22 @@ export class CombosService {
     const { page, limit, skip } = paginationDto;
 
     const [data, total] = await this.comboRepository.findAndCount({
-      where: { active: true },
+      where: { activo: true },
       skip,
       take: limit,
       order: { nombre: 'ASC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -121,19 +121,19 @@ export class CombosService {
   }
 
   async activate(id: number): Promise<Combo> {
-    await this.comboRepository.update(id, { active: true });
+    await this.comboRepository.update(id, { activo: true });
     return this.findById(id);
   }
 
   async deactivate(id: number): Promise<Combo> {
-    await this.comboRepository.update(id, { active: false });
+    await this.comboRepository.update(id, { activo: false });
     return this.findById(id);
   }
 
   async verificarDisponibilidad(comboId: number): Promise<{ disponible: boolean, productosNoDisponibles: string[] }> {
     const combo = await this.findById(comboId);
     
-    if (!combo.active) {
+    if (!combo.activo) {
       return { disponible: false, productosNoDisponibles: ['Combo inactivo'] };
     }
 
@@ -178,7 +178,7 @@ export class CombosService {
     // Esta funcionalidad requeriría tracking de ventas de combos
     // Por ahora retornamos los combos activos ordenados por nombre
     const combos = await this.comboRepository.find({
-      where: { active: true },
+      where: { activo: true },
       take: limit,
       order: { nombre: 'ASC' }
     });

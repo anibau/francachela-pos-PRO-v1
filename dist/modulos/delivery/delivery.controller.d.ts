@@ -1,6 +1,7 @@
 import { DeliveryService } from './delivery.service';
-import { CreateDeliveryDto, EstadoDelivery } from './dto/create-delivery.dto';
+import { CreateDeliveryDto } from './dto/create-delivery.dto';
 import { UpdateDeliveryDto } from './dto/update-delivery.dto';
+import { EstadoDelivery } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 export declare class DeliveryController {
     private readonly deliveryService;

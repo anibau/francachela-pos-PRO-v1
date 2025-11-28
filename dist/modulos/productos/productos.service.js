@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const producto_entity_1 = require("../../entities/producto.entity");
 const movimiento_inventario_entity_1 = require("../../entities/movimiento-inventario.entity");
+const enums_1 = require("../../common/enums");
 let ProductosService = class ProductosService {
     productoRepository;
     movimientoRepository;
@@ -43,7 +44,7 @@ let ProductosService = class ProductosService {
                 existenciaAnterior: 0,
                 existenciaNueva: savedProduct.cantidadActual,
                 invMinimo: savedProduct.cantidadMinima,
-                tipo: movimiento_inventario_entity_1.TipoMovimiento.ENTRADA,
+                tipo: enums_1.TipoMovimiento.ENTRADA,
                 cantidad: savedProduct.cantidadActual,
                 cajero,
                 observaciones: 'Stock inicial del producto',
@@ -58,15 +59,15 @@ let ProductosService = class ProductosService {
             take: limit,
             order: { fechaCreacion: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findById(id) {
@@ -96,15 +97,15 @@ let ProductosService = class ProductosService {
             take: limit,
             order: { fechaCreacion: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findByCategoria(categoria, paginationDto) {
@@ -115,15 +116,15 @@ let ProductosService = class ProductosService {
             take: limit,
             order: { productoDescripcion: 'ASC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findStockBajo() {
@@ -163,13 +164,13 @@ let ProductosService = class ProductosService {
         const existenciaAnterior = producto.cantidadActual;
         let existenciaNueva;
         switch (tipo) {
-            case movimiento_inventario_entity_1.TipoMovimiento.ENTRADA:
+            case enums_1.TipoMovimiento.ENTRADA:
                 existenciaNueva = existenciaAnterior + cantidad;
                 break;
-            case movimiento_inventario_entity_1.TipoMovimiento.SALIDA:
+            case enums_1.TipoMovimiento.SALIDA:
                 existenciaNueva = Math.max(0, existenciaAnterior - cantidad);
                 break;
-            case movimiento_inventario_entity_1.TipoMovimiento.AJUSTE:
+            case enums_1.TipoMovimiento.AJUSTE:
                 existenciaNueva = cantidad;
                 break;
             default:
@@ -185,7 +186,7 @@ let ProductosService = class ProductosService {
             existenciaNueva,
             invMinimo: producto.cantidadMinima,
             tipo,
-            cantidad: tipo === movimiento_inventario_entity_1.TipoMovimiento.AJUSTE ? existenciaNueva - existenciaAnterior : cantidad,
+            cantidad: tipo === enums_1.TipoMovimiento.AJUSTE ? existenciaNueva - existenciaAnterior : cantidad,
             cajero,
             proveedor,
             numeroFactura,
@@ -209,7 +210,7 @@ let ProductosService = class ProductosService {
             existenciaAnterior,
             existenciaNueva,
             invMinimo: producto.cantidadMinima,
-            tipo: movimiento_inventario_entity_1.TipoMovimiento.VENTA,
+            tipo: enums_1.TipoMovimiento.VENTA,
             cantidad,
             cajero,
             ventaId,
@@ -232,7 +233,7 @@ let ProductosService = class ProductosService {
             existenciaAnterior,
             existenciaNueva,
             invMinimo: producto.cantidadMinima,
-            tipo: movimiento_inventario_entity_1.TipoMovimiento.DEVOLUCION,
+            tipo: enums_1.TipoMovimiento.DEVOLUCION,
             cantidad,
             cajero,
             ventaId,
@@ -258,15 +259,15 @@ let ProductosService = class ProductosService {
             take: limit,
             order: { hora: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async getMovimientosByProducto(codigoBarra, paginationDto) {
@@ -277,15 +278,15 @@ let ProductosService = class ProductosService {
             take: limit,
             order: { hora: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
 };

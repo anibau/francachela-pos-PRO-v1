@@ -1,8 +1,4 @@
-export declare enum TipoMovimiento {
-    ENTRADA = "ENTRADA",
-    SALIDA = "SALIDA",
-    AJUSTE = "AJUSTE"
-}
+import { TipoMovimiento } from '../../../common/enums';
 export declare class CreateMovimientoDto {
     codigoBarra: string;
     tipo: TipoMovimiento;

@@ -1,5 +1,6 @@
 import { Repository } from 'typeorm';
-import { Promocion, TipoPromocion } from '../../entities/promocion.entity';
+import { Promocion } from '../../entities/promocion.entity';
+import { TipoPromocion } from '../../common/enums';
 import { CreatePromocionDto } from './dto/create-promocion.dto';
 import { UpdatePromocionDto } from './dto/update-promocion.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';

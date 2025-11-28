@@ -1,10 +1,4 @@
-export declare enum TipoMovimiento {
-    ENTRADA = "ENTRADA",
-    SALIDA = "SALIDA",
-    AJUSTE = "AJUSTE",
-    VENTA = "VENTA",
-    DEVOLUCION = "DEVOLUCION"
-}
+import { TipoMovimiento } from '../common/enums';
 export declare class MovimientoInventario {
     id: number;
     hora: Date;
@@ -14,6 +8,7 @@ export declare class MovimientoInventario {
     precioVenta: number;
     existenciaAnterior: number;
     existenciaNueva: number;
+    existencia: number;
     invMinimo: number;
     tipo: TipoMovimiento;
     cantidad: number;

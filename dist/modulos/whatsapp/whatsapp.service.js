@@ -114,7 +114,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.logger.log(`Mensaje enviado a ${sendMessageDto.phone}: ${sendMessageDto.message}`);
             return {
                 success: true,
-                messageId: sentMessage?.key?.id
+                messageId: sentMessage?.key?.id || undefined
             };
         }
         catch (error) {

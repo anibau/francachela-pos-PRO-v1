@@ -1,7 +1,8 @@
 import { Repository } from 'typeorm';
 import { Delivery } from '../../entities/delivery.entity';
 import { Cliente } from '../../entities/cliente.entity';
-import { CreateDeliveryDto, EstadoDelivery } from './dto/create-delivery.dto';
+import { CreateDeliveryDto } from './dto/create-delivery.dto';
+import { EstadoDelivery } from '../../common/enums';
 import { UpdateDeliveryDto } from './dto/update-delivery.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';

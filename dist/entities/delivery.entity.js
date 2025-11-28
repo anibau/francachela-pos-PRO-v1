@@ -9,17 +9,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Delivery = exports.EstadoDelivery = void 0;
+exports.Delivery = void 0;
 const typeorm_1 = require("typeorm");
 const cliente_entity_1 = require("./cliente.entity");
-var EstadoDelivery;
-(function (EstadoDelivery) {
-    EstadoDelivery["PENDIENTE"] = "PENDIENTE";
-    EstadoDelivery["EN_PREPARACION"] = "EN_PREPARACION";
-    EstadoDelivery["EN_CAMINO"] = "EN_CAMINO";
-    EstadoDelivery["ENTREGADO"] = "ENTREGADO";
-    EstadoDelivery["CANCELADO"] = "CANCELADO";
-})(EstadoDelivery || (exports.EstadoDelivery = EstadoDelivery = {}));
+const enums_1 = require("../common/enums");
 let Delivery = class Delivery {
     id;
     fecha;
@@ -69,8 +62,8 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: EstadoDelivery,
-        default: EstadoDelivery.PENDIENTE,
+        enum: enums_1.EstadoDelivery,
+        default: enums_1.EstadoDelivery.PENDIENTE,
     }),
     __metadata("design:type", String)
 ], Delivery.prototype, "estado", void 0);

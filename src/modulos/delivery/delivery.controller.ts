@@ -12,12 +12,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DeliveryService } from './delivery.service';
-import { CreateDeliveryDto, EstadoDelivery } from './dto/create-delivery.dto';
+import { CreateDeliveryDto } from './dto/create-delivery.dto';
 import { UpdateDeliveryDto } from './dto/update-delivery.dto';
 import { JwtAuthGuard } from '../../../src/modulos/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../entities/usuario.entity';
+import { UserRole, EstadoDelivery } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Delivery')
@@ -175,4 +175,3 @@ export class DeliveryController {
     return this.deliveryService.cancelar(id);
   }
 }
-

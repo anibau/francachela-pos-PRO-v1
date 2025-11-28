@@ -20,7 +20,7 @@ const create_movimiento_dto_1 = require("./dto/create-movimiento.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
-const usuario_entity_1 = require("../../entities/usuario.entity");
+const enums_1 = require("../../common/enums");
 const pagination_dto_1 = require("../../common/dto/pagination.dto");
 let MovimientoInventarioController = class MovimientoInventarioController {
     movimientoInventarioService;
@@ -71,7 +71,7 @@ let MovimientoInventarioController = class MovimientoInventarioController {
 exports.MovimientoInventarioController = MovimientoInventarioController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS),
     (0, swagger_1.ApiOperation)({ summary: 'Crear nuevo movimiento de inventario' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Movimiento creado exitosamente' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Datos inválidos o stock insuficiente' }),
@@ -82,7 +82,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener todos los movimientos de inventario' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Lista de movimientos obtenida exitosamente' }),
     __param(0, (0, common_1.Query)()),
@@ -92,7 +92,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('hoy'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener movimientos del día actual' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Movimientos del día obtenidos exitosamente' }),
     __metadata("design:type", Function),
@@ -101,7 +101,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "getMovimientosDelDia", null);
 __decorate([
     (0, common_1.Get)('estadisticas'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener estadísticas de movimientos por rango de fechas' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' }),
@@ -114,7 +114,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "getEstadisticas", null);
 __decorate([
     (0, common_1.Get)('producto/:codigoBarra'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener movimientos por producto' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Movimientos del producto obtenidos exitosamente' }),
     __param(0, (0, common_1.Param)('codigoBarra')),
@@ -125,7 +125,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "findByProducto", null);
 __decorate([
     (0, common_1.Get)('tipo/:tipo'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener movimientos por tipo' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Movimientos por tipo obtenidos exitosamente' }),
     __param(0, (0, common_1.Param)('tipo')),
@@ -136,7 +136,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "findByTipo", null);
 __decorate([
     (0, common_1.Get)('cajero/:cajero'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener movimientos por cajero' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Movimientos del cajero obtenidos exitosamente' }),
     __param(0, (0, common_1.Param)('cajero')),
@@ -147,7 +147,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "findByCajero", null);
 __decorate([
     (0, common_1.Get)('rango'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener movimientos por rango de fechas' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' }),
@@ -161,7 +161,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "findByDateRange", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener movimiento por ID' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Movimiento encontrado' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Movimiento no encontrado' }),
@@ -172,7 +172,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)('entrada'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS),
     (0, swagger_1.ApiOperation)({ summary: 'Registrar entrada de mercancía' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Entrada registrada exitosamente' }),
     __param(0, (0, common_1.Body)()),
@@ -182,7 +182,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "registrarEntrada", null);
 __decorate([
     (0, common_1.Post)('ajuste'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.INVENTARIOS),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.INVENTARIOS),
     (0, swagger_1.ApiOperation)({ summary: 'Registrar ajuste de inventario' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Ajuste registrado exitosamente' }),
     __param(0, (0, common_1.Body)()),
@@ -192,7 +192,7 @@ __decorate([
 ], MovimientoInventarioController.prototype, "registrarAjuste", null);
 __decorate([
     (0, common_1.Post)('venta'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Registrar salida por venta' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Venta registrada exitosamente' }),
     __param(0, (0, common_1.Body)()),

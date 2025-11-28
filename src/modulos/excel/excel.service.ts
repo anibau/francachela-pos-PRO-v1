@@ -45,7 +45,7 @@ export class ExcelService {
         break;
     }
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return await workbook.xlsx.writeBuffer() as unknown as Buffer;
   }
 
   private async createVentasSheet(workbook: ExcelJS.Workbook, exportDto: ExportVentasDto) {
@@ -329,4 +329,3 @@ export class ExcelService {
     });
   }
 }
-
