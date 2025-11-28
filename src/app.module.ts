@@ -17,6 +17,9 @@ import { GastosModule } from './modulos/gastos/gastos.module';
 import { CombosModule } from './modulos/combos/combos.module';
 import { DeliveryModule } from './modulos/delivery/delivery.module';
 import { MovimientoInventarioModule } from './modulos/movimiento-inventario/movimiento-inventario.module';
+import { WhatsappModule } from './modulos/whatsapp/whatsapp.module';
+import { ExcelModule } from './modulos/excel/excel.module';
+import { SeederModule } from './database/seeders/seeder.module';
 
 @Module({
   imports: [
@@ -50,6 +53,9 @@ import { MovimientoInventarioModule } from './modulos/movimiento-inventario/movi
     CombosModule,
     DeliveryModule,
     MovimientoInventarioModule,
+    WhatsappModule,
+    ExcelModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -51,7 +51,13 @@ export class MovimientoInventarioService {
 
     // Crear el movimiento
     const movimiento = this.movimientoRepository.create({
-      ...createMovimientoDto,
+      codigoBarra: createMovimientoDto.codigoBarra,
+      tipo: createMovimientoDto.tipo,
+      cantidad: createMovimientoDto.cantidad,
+      costo: createMovimientoDto.costo,
+      precioVenta: createMovimientoDto.precioVenta,
+      cajero: createMovimientoDto.cajero,
+      proveedor: createMovimientoDto.proveedor,
       descripcion: producto.productoDescripcion,
       existencia: producto.cantidadActual,
       invMinimo: producto.cantidadMinima,
@@ -78,16 +84,16 @@ export class MovimientoInventarioService {
       order: { hora: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -109,16 +115,16 @@ export class MovimientoInventarioService {
       order: { hora: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -132,16 +138,16 @@ export class MovimientoInventarioService {
       order: { hora: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -323,4 +329,3 @@ export class MovimientoInventarioService {
     return this.create(createMovimientoDto);
   }
 }
-

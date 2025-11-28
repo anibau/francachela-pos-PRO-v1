@@ -1,152 +1,176 @@
-# 🍻 Sistema POS Francachela - Backend API
+# 🍻 Francachela POS Backend
 
-Backend completo para el Sistema de Punto de Venta Francachela desarrollado con NestJS, TypeScript, PostgreSQL y TypeORM.
+Sistema de Punto de Venta completo desarrollado con **NestJS**, **TypeScript**, **PostgreSQL**, **TypeORM** y **Baileys** para WhatsApp.
 
 ## 🚀 Características Principales
 
 ### ✅ Módulos Implementados
 
-1. **Autenticación y Usuarios**
-   - ✅ JWT Authentication con roles (ADMIN, CAJERO, INVENTARIOS)
-   - ✅ CRUD completo de usuarios
-   - ✅ Protección de rutas por roles
-   - ✅ Encriptación de contraseñas con bcrypt
+1. **👥 Autenticación & Usuarios**
+   - ✅ Login con JWT y roles (ADMIN, CAJERO, INVENTARIOS)
+   - ✅ Gestión de usuarios del sistema
+   - ✅ Middleware de autorización por roles
 
-2. **Gestión de Productos e Inventario**
+2. **🍺 Gestión de Productos**
    - ✅ CRUD completo de productos
-   - ✅ Búsqueda por código de barras, nombre, categoría
-   - ✅ Control de stock con movimientos de inventario
-   - ✅ Alertas de stock bajo
-   - ✅ Precios normales y de mayoreo
+   - ✅ Código de barras único
+   - ✅ Control de stock y alertas de inventario bajo
+   - ✅ Precios normales y mayoreo
+   - ✅ Categorías y proveedores
    - ✅ Sistema de puntos por producto
 
-3. **Gestión de Clientes**
-   - ✅ CRUD completo de clientes
+3. **👤 Gestión de Clientes**
+   - ✅ CRUD completo con DNI único
    - ✅ Sistema de puntos de fidelidad
    - ✅ Historial de compras y canjes
-   - ✅ Búsqueda por DNI, nombre, código corto
-   - ✅ Clientes cumpleañeros
+   - ✅ Filtros por cumpleaños y deudas
 
-4. **Sistema de Ventas (POS)**
-   - ✅ Creación de ventas con múltiples productos
-   - ✅ Aplicación automática de puntos
-   - ✅ Múltiples métodos de pago
-   - ✅ Generación de tickets únicos
-   - ✅ Anulación de ventas con reversión de inventario
-   - ✅ Estadísticas de ventas
+4. **🛒 Sistema de Ventas (POS)**
+   - ✅ Multi-ticket (múltiples ventas simultáneas)
+   - ✅ Búsqueda por código de barras
+   - ✅ Múltiples métodos de pago (Efectivo, Yape, Plin, Tarjeta)
+   - ✅ Aplicación automática de descuentos
+   - ✅ Sistema de puntos automático
+   - ✅ Ventas locales y delivery
 
-5. **Promociones**
-   - ✅ CRUD de promociones
-   - ✅ Tipos: porcentaje, monto fijo, 2x1, 3x2
-   - ✅ Fechas de vigencia
-   - ✅ Límites de uso
-   - ✅ Aplicación automática
+5. **🎁 Promociones & Combos**
+   - ✅ Promociones por porcentaje o monto fijo
+   - ✅ Combos de productos con precios especiales
+   - ✅ Validación de disponibilidad automática
+   - ✅ Cálculo de ahorros en tiempo real
 
-6. **Caja Registradora**
-   - ✅ Apertura y cierre de caja
-   - ✅ Control de efectivo inicial y final
+6. **💰 Caja Registradora**
+   - ✅ Apertura/cierre de caja con control de diferencias
    - ✅ Desglose por método de pago
-   - ✅ Cálculo automático de diferencias
-   - ✅ Estadísticas de caja
+   - ✅ Historial de cajas por cajero
+   - ✅ Control de gastos operativos
 
-7. **Control de Gastos**
-   - ✅ Registro de gastos operativos
-   - ✅ Categorización de gastos
-   - ✅ Comprobantes y proveedores
-   - ✅ Estadísticas por categoría
+7. **🚚 Sistema de Delivery**
+   - ✅ Estados controlados (PENDIENTE → ASIGNADO → EN_CAMINO → ENTREGADO)
+   - ✅ Asignación de repartidores
+   - ✅ Tracking de tiempos de entrega
+   - ✅ Estadísticas por repartidor
 
-## 🏗️ Arquitectura Técnica
+8. **📦 Movimientos de Inventario**
+   - ✅ Tracking independiente (ENTRADA, SALIDA, AJUSTE)
+   - ✅ Integración automática con productos
+   - ✅ Estadísticas detalladas por período
+   - ✅ Reportes por producto y cajero
 
-### Stack Tecnológico
-- **Framework**: NestJS 10.x
-- **Lenguaje**: TypeScript
-- **Base de Datos**: PostgreSQL
-- **ORM**: TypeORM
-- **Autenticación**: JWT + Passport
-- **Validación**: class-validator + class-transformer
-- **Documentación**: Swagger/OpenAPI
+9. **📱 Integración WhatsApp**
+   - ✅ Notificaciones automáticas post-venta
+   - ✅ Mensajes de combos y promociones
+   - ✅ Alertas de delivery en tiempo real
+   - ✅ Notificaciones de stock bajo para administradores
 
-### Estructura del Proyecto
+10. **📊 Exportación Excel**
+    - ✅ Reportes de ventas con filtros de fecha
+    - ✅ Exportación de productos e inventario
+    - ✅ Reportes de clientes y delivery
+    - ✅ Formato profesional con totales y estadísticas
+
+11. **📚 Documentación Swagger**
+    - ✅ Documentación completa de todos los endpoints
+    - ✅ Autenticación Bearer Token integrada
+    - ✅ Ejemplos de request/response
+    - ✅ Interfaz interactiva en `/api`
+
+## 🏗️ Arquitectura
 
 ```
 src/
-├── auth/                 # Módulo de autenticación
-│   ├── guards/          # Guards JWT y roles
-│   ├── strategies/      # Estrategias Passport
-│   └── dto/            # DTOs de login
-├── users/               # Gestión de usuarios
-├── productos/           # Gestión de productos e inventario
-├── clientes/           # Gestión de clientes y puntos
-├── ventas/             # Sistema POS y ventas
-├── promociones/        # Sistema de promociones
-├── caja/               # Caja registradora
-├── gastos/             # Control de gastos
-├── entities/           # Entidades TypeORM
-├── common/             # Utilidades compartidas
-│   ├── decorators/     # Decoradores personalizados
-│   ├── guards/         # Guards compartidos
-│   ├── dto/           # DTOs compartidos
-│   └── interfaces/     # Interfaces compartidas
-└── config/             # Configuraciones
+├── modulos/                    # Módulos organizados
+│   ├── auth/                  # Autenticación JWT
+│   ├── users/                 # Gestión de usuarios
+│   ├── productos/             # Catálogo e inventario
+│   ├── clientes/              # Clientes y fidelidad
+│   ├── ventas/                # POS y transacciones
+│   ├── promociones/           # Descuentos y ofertas
+│   ├── combos/                # Paquetes de productos
+│   ├── caja/                  # Caja registradora
+│   ├── gastos/                # Gastos operativos
+│   ├── delivery/              # Entregas a domicilio
+│   ├── movimiento-inventario/ # Tracking de stock
+│   ├── whatsapp/              # Notificaciones
+│   └── excel/                 # Exportación de reportes
+├── entities/                   # Entidades TypeORM
+├── common/                     # Utilidades compartidas
+├── config/                     # Configuraciones
+├── database/
+│   └── seeders/               # Scripts de población
+└── main.ts                    # Punto de entrada
 ```
 
-## 🗄️ Modelo de Base de Datos
+## 🛠️ Tecnologías
 
-### Entidades Principales
+- **Backend**: NestJS + TypeScript
+- **Base de Datos**: PostgreSQL + TypeORM
+- **Autenticación**: JWT + bcryptjs
+- **Validación**: class-validator + class-transformer
+- **Documentación**: Swagger/OpenAPI
+- **WhatsApp**: @whiskeysockets/baileys
+- **Reportes**: ExcelJS
+- **Testing**: Jest
 
-1. **Usuario** - Gestión de usuarios del sistema
-2. **Producto** - Catálogo de productos
-3. **Cliente** - Base de datos de clientes
-4. **Venta** - Transacciones de venta
-5. **Promocion** - Promociones y descuentos
-6. **Combo** - Combos de productos
-7. **Caja** - Sesiones de caja registradora
-8. **Gasto** - Gastos operativos
-9. **Delivery** - Gestión de entregas
-10. **MovimientoInventario** - Auditoría de inventario
+## 📋 Requisitos Previos
 
-## 🔧 Instalación y Configuración
-
-### Prerrequisitos
 - Node.js 18+ 
 - PostgreSQL 12+
 - npm o yarn
 
-### Instalación
+## 🚀 Instalación
 
+### 1. Clonar el repositorio
 ```bash
-# Clonar el repositorio
-git clone <repository-url>
-cd francachela-pos-backend
+git clone https://github.com/anibau/francachela-pos-PRO-v1.git
+cd francachela-pos-PRO-v1
+```
 
-# Instalar dependencias
+### 2. Instalar dependencias
+```bash
 npm install
+```
 
-# Configurar variables de entorno
+### 3. Configurar variables de entorno
+```bash
 cp .env.example .env
 ```
 
-### Variables de Entorno
-
+Editar `.env` con tus configuraciones:
 ```env
-# Base de datos
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=password
-DB_DATABASE=francachela_pos
+# Base de Datos
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=tu_password
+DATABASE_NAME=francachela_pos
 
 # JWT
-JWT_SECRET=your-super-secret-jwt-key
+JWT_SECRET=tu_jwt_secret_super_seguro
 JWT_EXPIRES_IN=24h
 
-# Aplicación
+# Servidor
 PORT=3000
 NODE_ENV=development
 ```
 
-### Ejecución
+### 4. Crear base de datos
+```bash
+# Conectar a PostgreSQL y crear la base de datos
+createdb francachela_pos
+```
 
+### 5. Ejecutar migraciones (si las hay)
+```bash
+npm run migration:run
+```
+
+### 6. Poblar base de datos con datos de prueba
+```bash
+npm run seed
+```
+
+### 7. Iniciar el servidor
 ```bash
 # Desarrollo
 npm run start:dev
@@ -154,153 +178,237 @@ npm run start:dev
 # Producción
 npm run build
 npm run start:prod
-
-# Modo watch
-npm run start:debug
 ```
 
-## 📚 API Documentation
+## 📚 Documentación API
 
-La documentación completa de la API está disponible en Swagger:
+Una vez iniciado el servidor, accede a:
 
-```
-http://localhost:3000/api
-```
+- **Swagger UI**: http://localhost:3000/api
+- **JSON Schema**: http://localhost:3000/api-json
 
-### Endpoints Principales
+### 🔐 Autenticación
 
-#### Autenticación
-- `POST /auth/login` - Iniciar sesión
-- `GET /auth/profile` - Obtener perfil del usuario
+1. **Login** en `/auth/login` con:
+   ```json
+   {
+     "username": "admin",
+     "password": "admin123"
+   }
+   ```
 
-#### Productos
-- `GET /productos` - Listar productos
-- `POST /productos` - Crear producto
-- `GET /productos/codigo/:codigo` - Buscar por código de barras
-- `PATCH /productos/:id/stock` - Actualizar stock
+2. **Usar el token** en el header:
+   ```
+   Authorization: Bearer tu_jwt_token_aqui
+   ```
 
-#### Clientes
-- `GET /clientes` - Listar clientes
-- `POST /clientes` - Crear cliente
-- `GET /clientes/dni/:dni` - Buscar por DNI
+### 👥 Usuarios por Defecto (después del seeding)
 
-#### Ventas
-- `POST /ventas` - Crear venta
-- `GET /ventas/hoy` - Ventas del día
-- `PATCH /ventas/:id/anular` - Anular venta
+| Usuario | Password | Rol | Descripción |
+|---------|----------|-----|-------------|
+| `admin` | `admin123` | ADMIN | Administrador principal |
+| `cajero1` | `cajero123` | CAJERO | María González |
+| `cajero2` | `cajero123` | CAJERO | Carlos Rodríguez |
+| `inventarios` | `inv123` | INVENTARIOS | Ana Martínez |
 
-#### Caja
-- `POST /caja/abrir` - Abrir caja
-- `PATCH /caja/:id/cerrar` - Cerrar caja
-- `GET /caja/resumen` - Resumen de caja actual
+## 📊 Datos de Prueba
 
-## 🔐 Sistema de Roles
+El comando `npm run seed` crea **5 registros de prueba** en cada tabla:
 
-### Roles Disponibles
+- ✅ **5 Usuarios** con diferentes roles
+- ✅ **5 Productos** (cervezas, pisco, chicharrón, agua)
+- ✅ **5 Clientes** con puntos acumulados
+- ✅ **5 Promociones** activas e inactivas
+- ✅ **5 Combos** con diferentes productos
+- ✅ **5 Ventas** de ejemplo con diferentes métodos de pago
+- ✅ **5 Cajas** con historial de apertura/cierre
+- ✅ **5 Gastos** operativos
+- ✅ **5 Deliveries** en diferentes estados
+- ✅ **5 Movimientos** de inventario
 
-1. **ADMIN** - Acceso completo al sistema
-2. **CAJERO** - Operaciones de venta y caja
-3. **INVENTARIOS** - Gestión de productos y stock
-
-### Protección de Rutas
-
-Todas las rutas están protegidas con:
-- **JwtAuthGuard** - Verificación de token JWT
-- **RolesGuard** - Verificación de roles específicos
-
-## 🎯 Flujos de Negocio
-
-### Flujo de Venta
-
-1. Cajero abre caja registradora
-2. Busca productos por código de barras
-3. Agrega productos al carrito
-4. Asocia cliente (opcional)
-5. Aplica descuentos/promociones
-6. Usa puntos del cliente (opcional)
-7. Selecciona método de pago
-8. Completa la venta
-9. Sistema actualiza automáticamente:
-   - Stock de productos
-   - Puntos del cliente
-   - Totales de caja
-
-### Flujo de Inventario
-
-1. Recepción de mercancía
-2. Registro de entrada en sistema
-3. Actualización automática de stock
-4. Generación de movimiento de inventario
-5. Alertas automáticas de stock bajo
-
-## 🔄 Integración con Frontend
-
-Este backend está diseñado para integrarse con el frontend React del Sistema POS Francachela. Proporciona:
-
-- **API RESTful** completa
-- **Documentación Swagger** para desarrollo
-- **Validación de datos** robusta
-- **Manejo de errores** consistente
-- **Paginación** en todas las listas
-- **Filtros y búsquedas** avanzadas
-
-## 🚀 Próximas Funcionalidades
-
-- [ ] Módulo de Delivery completo
-- [ ] Módulo de Combos avanzado
-- [ ] Integración con Baileys (WhatsApp)
-- [ ] Reportes avanzados en PDF
-- [ ] Dashboard en tiempo real
-- [ ] Notificaciones push
-- [ ] Backup automático
-- [ ] Logs de auditoría
-
-## 🛠️ Scripts Disponibles
+## 🔧 Scripts Disponibles
 
 ```bash
 # Desarrollo
-npm run start:dev      # Modo desarrollo con hot reload
-npm run start:debug    # Modo debug
+npm run start:dev          # Servidor con hot-reload
+npm run start:debug        # Servidor con debug
 
-# Construcción
-npm run build          # Compilar para producción
-npm run start:prod     # Ejecutar en producción
+# Producción
+npm run build              # Compilar TypeScript
+npm run start:prod         # Servidor de producción
 
-# Testing
-npm run test           # Tests unitarios
-npm run test:e2e       # Tests end-to-end
-npm run test:cov       # Coverage de tests
+# Base de Datos
+npm run migration:generate # Generar migración
+npm run migration:run      # Ejecutar migraciones
+npm run migration:revert   # Revertir migración
+npm run seed              # Poblar base de datos
+npm run seed:dev          # Poblar en desarrollo
+npm run seed:prod         # Poblar en producción
 
-# Linting
-npm run lint           # Verificar código
-npm run format         # Formatear código
-
-# Base de datos
-npm run typeorm        # Comandos TypeORM CLI
+# Calidad de Código
+npm run lint              # Linter ESLint
+npm run format            # Formatear con Prettier
+npm run test              # Tests unitarios
+npm run test:e2e          # Tests end-to-end
 ```
 
-## 📊 Monitoreo y Logs
+## 📱 Integración WhatsApp
 
-El sistema incluye:
-- **Logging estructurado** con Winston
-- **Validación de entrada** en todos los endpoints
-- **Manejo de errores** centralizado
-- **Métricas de performance** básicas
+### Configuración
 
-## 🔒 Seguridad
+1. **Habilitar WhatsApp** en `.env`:
+   ```env
+   WHATSAPP_ENABLED=true
+   ```
 
-Implementaciones de seguridad:
-- **Autenticación JWT** robusta
-- **Encriptación de contraseñas** con bcrypt
-- **Validación de entrada** estricta
-- **Protección CORS** configurada
-- **Rate limiting** (recomendado para producción)
+2. **Primera conexión**:
+   - Iniciar el servidor
+   - Escanear el código QR que aparece en la consola
+   - El sistema guardará la sesión automáticamente
+
+3. **Endpoints disponibles**:
+   - `POST /whatsapp/send` - Enviar mensaje personalizado
+   - `POST /whatsapp/send-venta` - Notificación de venta
+   - `POST /whatsapp/send-combo` - Notificación de combo
+   - `POST /whatsapp/send-delivery` - Estado de delivery
+   - `GET /whatsapp/status` - Estado de conexión
+
+### Mensajes Automáticos
+
+El sistema envía automáticamente:
+
+- 🍻 **Post-venta**: Agradecimiento con total y puntos ganados
+- 🎁 **Combos**: Confirmación con ahorro obtenido
+- 🚚 **Delivery**: Actualizaciones de estado de entrega
+- ⚠️ **Stock bajo**: Alertas para administradores
+
+## 📊 Exportación Excel
+
+### Reportes Disponibles
+
+- **Ventas**: `/excel/export-ventas` - Con filtros de fecha
+- **Productos**: `/excel/export-productos` - Inventario completo
+- **Clientes**: `/excel/export-clientes` - Base de datos de clientes
+- **Inventario**: `/excel/export-inventario` - Movimientos de stock
+- **Delivery**: `/excel/export-delivery` - Historial de entregas
+
+### Características
+
+- ✅ Formato profesional con headers estilizados
+- ✅ Totales y estadísticas automáticas
+- ✅ Filtros por rango de fechas
+- ✅ Descarga directa desde el navegador
+- ✅ Nombres de archivo con timestamp
+
+## 🔐 Seguridad
+
+- ✅ **Autenticación JWT** con expiración configurable
+- ✅ **Control de roles** granular por endpoint
+- ✅ **Validación de datos** con class-validator
+- ✅ **Sanitización de inputs** automática
+- ✅ **CORS** configurado para frontend
+- ✅ **Rate limiting** (recomendado para producción)
+
+## 🚀 Despliegue en Producción
+
+### Variables de Entorno Adicionales
+
+```env
+NODE_ENV=production
+DATABASE_SSL=true
+DATABASE_SYNCHRONIZE=false
+LOG_LEVEL=error
+CORS_ORIGIN=https://tu-frontend.com
+```
+
+### Recomendaciones
+
+1. **Base de Datos**:
+   - Usar conexión SSL
+   - Configurar backup automático
+   - Monitorear performance
+
+2. **Servidor**:
+   - Usar PM2 para gestión de procesos
+   - Configurar reverse proxy (Nginx)
+   - Implementar rate limiting
+
+3. **Seguridad**:
+   - JWT secret fuerte y único
+   - HTTPS obligatorio
+   - Logs de auditoría
+
+## 🧪 Testing
+
+```bash
+# Tests unitarios
+npm run test
+
+# Tests con coverage
+npm run test:cov
+
+# Tests end-to-end
+npm run test:e2e
+
+# Tests en modo watch
+npm run test:watch
+```
+
+## 📈 Métricas y Monitoreo
+
+### Endpoints de Salud
+
+- `GET /health` - Estado general del sistema
+- `GET /health/database` - Estado de la base de datos
+- `GET /whatsapp/status` - Estado de WhatsApp
+
+### Logs
+
+El sistema registra automáticamente:
+- ✅ Todas las transacciones de venta
+- ✅ Movimientos de inventario
+- ✅ Errores y excepciones
+- ✅ Conexiones de WhatsApp
+- ✅ Exportaciones de reportes
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abrir Pull Request
 
 ## 📄 Licencia
 
-Proyecto privado - Francachela POS System
+Este proyecto es privado y propietario de Francachela.
+
+## 📞 Soporte
+
+- **Email**: soporte@francachela.com
+- **Documentación**: http://localhost:3000/api
+- **Issues**: GitHub Issues
 
 ---
 
-**Desarrollado con ❤️ usando NestJS y TypeScript para optimizar la gestión de tu negocio**
+**🍻 Desarrollado con ❤️ para mejorar la gestión de tu negocio**
+
+### 📊 Estadísticas del Proyecto
+
+- **Líneas de código**: ~6,000+
+- **Endpoints**: 50+
+- **Módulos**: 12
+- **Entidades**: 10
+- **Tests**: 100+ (objetivo)
+- **Cobertura**: 90%+ (objetivo)
+
+### 🎯 Roadmap
+
+- [ ] **App móvil** nativa (React Native)
+- [ ] **Dashboard en tiempo real** con WebSockets
+- [ ] **Impresión térmica** de tickets
+- [ ] **Modo offline** con sincronización
+- [ ] **Integración con bancos** para pagos
+- [ ] **BI y analytics** avanzados
+- [ ] **Multi-tienda** y franquicias
 
