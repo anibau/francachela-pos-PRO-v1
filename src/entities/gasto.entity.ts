@@ -1,0 +1,59 @@
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { MetodoPago } from './venta.entity';
+
+export enum CategoriaGasto {
+  COMPRAS = 'COMPRAS',
+  SERVICIOS = 'SERVICIOS',
+  MANTENIMIENTO = 'MANTENIMIENTO',
+  PERSONAL = 'PERSONAL',
+  MARKETING = 'MARKETING',
+  OTROS = 'OTROS',
+}
+
+@Entity('gastos')
+export class Gasto {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  fecha: Date;
+
+  @Column()
+  descripcion: string;
+
+  @Column('decimal', { precision: 10, scale: 2 })
+  monto: number;
+
+  @Column({
+    type: 'enum',
+    enum: CategoriaGasto,
+    default: CategoriaGasto.OTROS,
+  })
+  categoria: CategoriaGasto;
+
+  @Column()
+  cajero: string;
+
+  @Column({ nullable: true })
+  comprobante: string;
+
+  @Column({
+    type: 'enum',
+    enum: MetodoPago,
+    default: MetodoPago.EFECTIVO,
+  })
+  metodoPago: MetodoPago;
+
+  @Column({ nullable: true })
+  proveedor: string;
+
+  @Column({ nullable: true })
+  numeroComprobante: string;
+
+  @CreateDateColumn()
+  fechaCreacion: Date;
+
+  @UpdateDateColumn()
+  fechaActualizacion: Date;
+}
+
