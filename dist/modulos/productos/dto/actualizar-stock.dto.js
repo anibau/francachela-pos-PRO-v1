@@ -13,7 +13,7 @@ exports.ActualizarStockDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
-const movimiento_inventario_entity_1 = require("../../../entities/movimiento-inventario.entity");
+const enums_1 = require("../../../common/enums");
 class ActualizarStockDto {
     cantidad;
     tipo;
@@ -35,10 +35,10 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Tipo de movimiento de inventario',
-        enum: movimiento_inventario_entity_1.TipoMovimiento,
-        example: movimiento_inventario_entity_1.TipoMovimiento.ENTRADA
+        enum: enums_1.TipoMovimiento,
+        example: enums_1.TipoMovimiento.ENTRADA
     }),
-    (0, class_validator_1.IsEnum)(movimiento_inventario_entity_1.TipoMovimiento),
+    (0, class_validator_1.IsEnum)(enums_1.TipoMovimiento),
     __metadata("design:type", String)
 ], ActualizarStockDto.prototype, "tipo", void 0);
 __decorate([

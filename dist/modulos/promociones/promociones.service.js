@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const promocion_entity_1 = require("../../entities/promocion.entity");
+const enums_1 = require("../../common/enums");
 let PromocionesService = class PromocionesService {
     promocionRepository;
     constructor(promocionRepository) {
@@ -33,15 +34,15 @@ let PromocionesService = class PromocionesService {
             take: limit,
             order: { fechaCreacion: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findById(id) {
@@ -96,14 +97,14 @@ let PromocionesService = class PromocionesService {
         }
         let descuento = 0;
         switch (promocion.tipo) {
-            case promocion_entity_1.TipoPromocion.PORCENTAJE:
+            case enums_1.TipoPromocion.PORCENTAJE:
                 descuento = (montoCompra * promocion.descuento) / 100;
                 break;
-            case promocion_entity_1.TipoPromocion.MONTO:
+            case enums_1.TipoPromocion.MONTO:
                 descuento = promocion.descuento;
                 break;
-            case promocion_entity_1.TipoPromocion.DOS_X_UNO:
-            case promocion_entity_1.TipoPromocion.TRES_X_DOS:
+            case enums_1.TipoPromocion.DOS_POR_UNO:
+            case enums_1.TipoPromocion.TRES_POR_DOS:
                 descuento = 0;
                 break;
         }

@@ -36,7 +36,7 @@ let VentasService = class VentasService {
         let cliente = null;
         if (clienteId) {
             cliente = await this.clientesService.findById(clienteId);
-            if (puntosUsados > 0 && cliente.puntosAcumulados < puntosUsados) {
+            if (puntosUsados && puntosUsados > 0 && cliente.puntosAcumulados < puntosUsados) {
                 throw new common_1.BadRequestException('El cliente no tiene suficientes puntos');
             }
         }
@@ -60,7 +60,7 @@ let VentasService = class VentasService {
             });
             subTotal += subtotalItem;
         }
-        const descuentoPorPuntos = puntosUsados * 0.10;
+        const descuentoPorPuntos = (puntosUsados || 0) * 0.10;
         const descuentoTotal = (createVentaDto.descuento || 0) + descuentoPorPuntos;
         const total = subTotal - descuentoTotal;
         if (total < 0) {
@@ -70,7 +70,7 @@ let VentasService = class VentasService {
         const ticketId = await this.generateTicketId();
         const venta = this.ventaRepository.create({
             ...createVentaDto,
-            cliente,
+            cliente: cliente || undefined,
             listaProductos: productosValidados,
             subTotal,
             descuento: descuentoTotal,
@@ -86,7 +86,7 @@ let VentasService = class VentasService {
             await this.productosService.descontarStock(item.codigoBarra, item.cantidad, cajero, ventaGuardada.id);
         }
         if (cliente) {
-            if (puntosUsados > 0) {
+            if (puntosUsados && puntosUsados > 0) {
                 await this.clientesService.canjearPuntos(cliente.id, puntosUsados, ventaGuardada.id, 'Descuento en compra');
             }
             if (puntosOtorgados > 0) {
@@ -103,15 +103,15 @@ let VentasService = class VentasService {
             take: limit,
             order: { fecha: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findById(id) {
@@ -145,15 +145,15 @@ let VentasService = class VentasService {
             take: limit,
             order: { fecha: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findByCliente(clienteId, paginationDto) {
@@ -165,15 +165,15 @@ let VentasService = class VentasService {
             take: limit,
             order: { fecha: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async anularVenta(id, cajero) {

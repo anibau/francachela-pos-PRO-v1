@@ -44,15 +44,15 @@ let CombosService = class CombosService {
             take: limit,
             order: { nombre: 'ASC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findById(id) {
@@ -65,20 +65,20 @@ let CombosService = class CombosService {
     async findActivos(paginationDto) {
         const { page, limit, skip } = paginationDto;
         const [data, total] = await this.comboRepository.findAndCount({
-            where: { active: true },
+            where: { activo: true },
             skip,
             take: limit,
             order: { nombre: 'ASC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async update(id, updateComboDto) {
@@ -105,16 +105,16 @@ let CombosService = class CombosService {
         }
     }
     async activate(id) {
-        await this.comboRepository.update(id, { active: true });
+        await this.comboRepository.update(id, { activo: true });
         return this.findById(id);
     }
     async deactivate(id) {
-        await this.comboRepository.update(id, { active: false });
+        await this.comboRepository.update(id, { activo: false });
         return this.findById(id);
     }
     async verificarDisponibilidad(comboId) {
         const combo = await this.findById(comboId);
-        if (!combo.active) {
+        if (!combo.activo) {
             return { disponible: false, productosNoDisponibles: ['Combo inactivo'] };
         }
         const productosNoDisponibles = [];
@@ -147,7 +147,7 @@ let CombosService = class CombosService {
     }
     async getCombosPopulares(limit = 10) {
         const combos = await this.comboRepository.find({
-            where: { active: true },
+            where: { activo: true },
             take: limit,
             order: { nombre: 'ASC' }
         });

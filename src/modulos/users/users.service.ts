@@ -43,16 +43,16 @@ export class UsersService {
       order: { fechaCreacion: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -64,7 +64,7 @@ export class UsersService {
     return user;
   }
 
-  async findByUsername(username: string): Promise<Usuario> {
+  async findByUsername(username: string): Promise<Usuario | null> {
     return this.usuarioRepository.findOne({ where: { username } });
   }
 
@@ -98,4 +98,3 @@ export class UsersService {
     return this.findById(id);
   }
 }
-

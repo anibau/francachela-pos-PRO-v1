@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateDeliveryDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const create_delivery_dto_1 = require("./create-delivery.dto");
+const enums_1 = require("../../../common/enums");
 const class_validator_1 = require("class-validator");
 const swagger_2 = require("@nestjs/swagger");
 class UpdateDeliveryDto extends (0, swagger_1.PartialType)(create_delivery_dto_1.CreateDeliveryDto) {
@@ -23,11 +24,11 @@ exports.UpdateDeliveryDto = UpdateDeliveryDto;
 __decorate([
     (0, swagger_2.ApiPropertyOptional)({
         description: 'Estado del delivery',
-        enum: create_delivery_dto_1.EstadoDelivery,
-        example: create_delivery_dto_1.EstadoDelivery.EN_CAMINO
+        enum: enums_1.EstadoDelivery,
+        example: enums_1.EstadoDelivery.EN_CAMINO
     }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(create_delivery_dto_1.EstadoDelivery),
+    (0, class_validator_1.IsEnum)(enums_1.EstadoDelivery),
     __metadata("design:type", String)
 ], UpdateDeliveryDto.prototype, "estado", void 0);
 __decorate([

@@ -7,7 +7,7 @@ import {
   Header 
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { ExcelService } from './excel.service';
 import { ExportVentasDto, TipoReporte } from './dto/export-ventas.dto';
 import { JwtAuthGuard } from '../../../src/modulos/auth/guards/jwt-auth.guard';
@@ -128,4 +128,3 @@ export class ExcelController {
     res.end(buffer);
   }
 }
-

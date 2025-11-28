@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Delivery } from '../../entities/delivery.entity';
 import { Cliente } from '../../entities/cliente.entity';
-import { CreateDeliveryDto, EstadoDelivery } from './dto/create-delivery.dto';
+import { CreateDeliveryDto } from './dto/create-delivery.dto';
+import { EstadoDelivery } from '../../common/enums';
 import { UpdateDeliveryDto } from './dto/update-delivery.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
@@ -46,16 +47,16 @@ export class DeliveryService {
       order: { fecha: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -81,16 +82,16 @@ export class DeliveryService {
       order: { fecha: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -105,16 +106,16 @@ export class DeliveryService {
       order: { fecha: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -131,16 +132,16 @@ export class DeliveryService {
       order: { fecha: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -294,4 +295,3 @@ export class DeliveryService {
     return result.map(r => r.repartidor).filter(r => r);
   }
 }
-

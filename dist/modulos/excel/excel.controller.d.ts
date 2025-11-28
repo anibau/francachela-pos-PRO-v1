@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import { ExcelService } from './excel.service';
 import { ExportVentasDto } from './dto/export-ventas.dto';
 export declare class ExcelController {

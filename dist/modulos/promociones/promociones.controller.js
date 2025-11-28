@@ -21,9 +21,8 @@ const update_promocion_dto_1 = require("./dto/update-promocion.dto");
 const jwt_auth_guard_1 = require("../../../src/modulos/auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
-const usuario_entity_1 = require("../../entities/usuario.entity");
+const enums_1 = require("../../common/enums");
 const pagination_dto_1 = require("../../common/dto/pagination.dto");
-const promocion_entity_1 = require("../../entities/promocion.entity");
 let PromocionesController = class PromocionesController {
     promocionesService;
     constructor(promocionesService) {
@@ -63,7 +62,7 @@ let PromocionesController = class PromocionesController {
 exports.PromocionesController = PromocionesController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN),
     (0, swagger_1.ApiOperation)({ summary: 'Crear nueva promoción' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Promoción creada exitosamente' }),
     __param(0, (0, common_1.Body)()),
@@ -73,7 +72,7 @@ __decorate([
 ], PromocionesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener todas las promociones' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Lista de promociones obtenida exitosamente' }),
     __param(0, (0, common_1.Query)()),
@@ -83,7 +82,7 @@ __decorate([
 ], PromocionesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('activas'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener promociones activas' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promociones activas obtenidas exitosamente' }),
     __metadata("design:type", Function),
@@ -92,7 +91,7 @@ __decorate([
 ], PromocionesController.prototype, "findActivas", null);
 __decorate([
     (0, common_1.Get)('vencidas'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener promociones vencidas' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promociones vencidas obtenidas exitosamente' }),
     __metadata("design:type", Function),
@@ -101,7 +100,7 @@ __decorate([
 ], PromocionesController.prototype, "getVencidas", null);
 __decorate([
     (0, common_1.Get)('tipo/:tipo'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener promociones por tipo' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promociones por tipo obtenidas exitosamente' }),
     __param(0, (0, common_1.Param)('tipo')),
@@ -111,7 +110,7 @@ __decorate([
 ], PromocionesController.prototype, "findByTipo", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener promoción por ID' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promoción encontrada' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Promoción no encontrada' }),
@@ -122,7 +121,7 @@ __decorate([
 ], PromocionesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN),
     (0, swagger_1.ApiOperation)({ summary: 'Actualizar promoción' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promoción actualizada exitosamente' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Promoción no encontrada' }),
@@ -134,7 +133,7 @@ __decorate([
 ], PromocionesController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN),
     (0, swagger_1.ApiOperation)({ summary: 'Desactivar promoción' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promoción desactivada exitosamente' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Promoción no encontrada' }),
@@ -145,7 +144,7 @@ __decorate([
 ], PromocionesController.prototype, "remove", null);
 __decorate([
     (0, common_1.Patch)(':id/activate'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN),
     (0, swagger_1.ApiOperation)({ summary: 'Activar promoción' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promoción activada exitosamente' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Promoción no encontrada' }),
@@ -156,7 +155,7 @@ __decorate([
 ], PromocionesController.prototype, "activate", null);
 __decorate([
     (0, common_1.Post)('desactivar-vencidas'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN),
     (0, swagger_1.ApiOperation)({ summary: 'Desactivar promociones vencidas' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Promociones vencidas desactivadas' }),
     __metadata("design:type", Function),

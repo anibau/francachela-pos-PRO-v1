@@ -61,7 +61,7 @@ const caja_entity_1 = require("../../entities/caja.entity");
 const gasto_entity_1 = require("../../entities/gasto.entity");
 const delivery_entity_1 = require("../../entities/delivery.entity");
 const movimiento_inventario_entity_1 = require("../../entities/movimiento-inventario.entity");
-const create_movimiento_dto_1 = require("../../modulos/movimiento-inventario/dto/create-movimiento.dto");
+const enums_1 = require("../../common/enums");
 let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
     usuarioRepository;
     productoRepository;
@@ -112,31 +112,31 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             {
                 username: 'admin',
                 password: await bcrypt.hash('admin123', 10),
-                rol: usuario_entity_1.UserRole.ADMIN,
+                rol: enums_1.UserRole.ADMIN,
                 nombre: 'Administrador Principal'
             },
             {
                 username: 'cajero1',
                 password: await bcrypt.hash('cajero123', 10),
-                rol: usuario_entity_1.UserRole.CAJERO,
+                rol: enums_1.UserRole.CAJERO,
                 nombre: 'María González'
             },
             {
                 username: 'cajero2',
                 password: await bcrypt.hash('cajero123', 10),
-                rol: usuario_entity_1.UserRole.CAJERO,
+                rol: enums_1.UserRole.CAJERO,
                 nombre: 'Carlos Rodríguez'
             },
             {
                 username: 'inventarios',
                 password: await bcrypt.hash('inv123', 10),
-                rol: usuario_entity_1.UserRole.INVENTARIOS,
+                rol: enums_1.UserRole.INVENTARIOS,
                 nombre: 'Ana Martínez'
             },
             {
                 username: 'supervisor',
                 password: await bcrypt.hash('super123', 10),
-                rol: usuario_entity_1.UserRole.ADMIN,
+                rol: enums_1.UserRole.ADMIN,
                 nombre: 'Luis Supervisor'
             }
         ];
@@ -301,7 +301,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             {
                 nombre: 'Descuento Fin de Semana',
                 descripcion: '10% de descuento en todas las cervezas',
-                tipo: promocion_entity_1.TipoPromocion.PORCENTAJE,
+                tipo: enums_1.TipoPromocion.PORCENTAJE,
                 descuento: 10,
                 fechaInicio: new Date('2024-01-01'),
                 fechaFin: new Date('2024-12-31'),
@@ -310,7 +310,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             {
                 nombre: 'Happy Hour',
                 descripcion: 'S/5 de descuento en licores',
-                tipo: promocion_entity_1.TipoPromocion.MONTO,
+                tipo: enums_1.TipoPromocion.MONTO,
                 descuento: 5,
                 fechaInicio: new Date('2024-01-01'),
                 fechaFin: new Date('2024-12-31'),
@@ -319,7 +319,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             {
                 nombre: 'Promo Estudiantes',
                 descripcion: '15% descuento con carnet universitario',
-                tipo: promocion_entity_1.TipoPromocion.PORCENTAJE,
+                tipo: enums_1.TipoPromocion.PORCENTAJE,
                 descuento: 15,
                 fechaInicio: new Date('2024-03-01'),
                 fechaFin: new Date('2024-07-31'),
@@ -328,7 +328,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             {
                 nombre: 'Descuento Cumpleañeros',
                 descripcion: 'S/10 de descuento en tu cumpleaños',
-                tipo: promocion_entity_1.TipoPromocion.MONTO,
+                tipo: enums_1.TipoPromocion.MONTO,
                 descuento: 10,
                 fechaInicio: new Date('2024-01-01'),
                 fechaFin: new Date('2024-12-31'),
@@ -337,7 +337,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             {
                 nombre: 'Black Friday',
                 descripcion: '25% descuento en todo',
-                tipo: promocion_entity_1.TipoPromocion.PORCENTAJE,
+                tipo: enums_1.TipoPromocion.PORCENTAJE,
                 descuento: 25,
                 fechaInicio: new Date('2024-11-29'),
                 fechaFin: new Date('2024-11-29'),
@@ -439,7 +439,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 totalGastos: 50.00,
                 montoFinal: 500.00,
                 cajero: 'María González',
-                estado: caja_entity_1.EstadoCaja.CERRADA,
+                estado: enums_1.EstadoCaja.CERRADA,
                 diferencia: 0.00
             },
             {
@@ -450,7 +450,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 totalGastos: 30.00,
                 montoFinal: 450.00,
                 cajero: 'Carlos Rodríguez',
-                estado: caja_entity_1.EstadoCaja.CERRADA,
+                estado: enums_1.EstadoCaja.CERRADA,
                 diferencia: 0.00
             },
             {
@@ -461,7 +461,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 totalGastos: 40.00,
                 montoFinal: 580.00,
                 cajero: 'María González',
-                estado: caja_entity_1.EstadoCaja.CERRADA,
+                estado: enums_1.EstadoCaja.CERRADA,
                 diferencia: 0.00
             },
             {
@@ -472,7 +472,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 totalGastos: 25.00,
                 montoFinal: 365.00,
                 cajero: 'Carlos Rodríguez',
-                estado: caja_entity_1.EstadoCaja.CERRADA,
+                estado: enums_1.EstadoCaja.CERRADA,
                 diferencia: 0.00
             },
             {
@@ -483,7 +483,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 totalGastos: 15.00,
                 montoFinal: 0.00,
                 cajero: 'María González',
-                estado: caja_entity_1.EstadoCaja.ABIERTA,
+                estado: enums_1.EstadoCaja.ABIERTA,
                 diferencia: 0.00
             }
         ];
@@ -498,41 +498,41 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 fecha: new Date('2024-01-15 10:30:00'),
                 descripcion: 'Compra de servilletas y vasos',
                 monto: 25.00,
-                categoria: 'Insumos',
+                categoria: enums_1.CategoriaGasto.OPERATIVO,
                 cajero: 'María González',
-                metodoPago: 'Efectivo'
+                metodoPago: enums_1.MetodoPago.EFECTIVO
             },
             {
                 fecha: new Date('2024-01-15 14:15:00'),
                 descripcion: 'Pago de luz',
                 monto: 80.00,
-                categoria: 'Servicios',
+                categoria: enums_1.CategoriaGasto.SERVICIOS,
                 cajero: 'María González',
-                metodoPago: 'Transferencia'
+                metodoPago: enums_1.MetodoPago.TARJETA
             },
             {
                 fecha: new Date('2024-01-16 09:45:00'),
                 descripcion: 'Limpieza y mantenimiento',
                 monto: 45.00,
-                categoria: 'Mantenimiento',
+                categoria: enums_1.CategoriaGasto.MANTENIMIENTO,
                 cajero: 'Carlos Rodríguez',
-                metodoPago: 'Efectivo'
+                metodoPago: enums_1.MetodoPago.EFECTIVO
             },
             {
                 fecha: new Date('2024-01-17 11:20:00'),
                 descripcion: 'Compra de hielo',
                 monto: 15.00,
-                categoria: 'Insumos',
+                categoria: enums_1.CategoriaGasto.OPERATIVO,
                 cajero: 'María González',
-                metodoPago: 'Efectivo'
+                metodoPago: enums_1.MetodoPago.EFECTIVO
             },
             {
                 fecha: new Date('2024-01-18 16:30:00'),
                 descripcion: 'Reparación de refrigeradora',
                 monto: 120.00,
-                categoria: 'Mantenimiento',
+                categoria: enums_1.CategoriaGasto.MANTENIMIENTO,
                 cajero: 'Carlos Rodríguez',
-                metodoPago: 'Transferencia'
+                metodoPago: enums_1.MetodoPago.TARJETA
             }
         ];
         for (const gastoData of gastos) {
@@ -553,12 +553,12 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 subTotal: 27.00,
                 descuento: 2.70,
                 total: 24.30,
-                metodoPago: 'Efectivo',
+                metodoPago: enums_1.MetodoPago.EFECTIVO,
                 cajero: 'María González',
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 24,
                 puntosUsados: 0,
-                tipoCompra: venta_entity_1.TipoCompra.LOCAL,
+                tipoCompra: enums_1.TipoCompra.LOCAL,
                 comentario: 'Cliente frecuente'
             },
             {
@@ -572,10 +572,10 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 total: 16.50,
                 metodoPago: 'Yape',
                 cajero: 'María González',
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 16,
                 puntosUsados: 0,
-                tipoCompra: venta_entity_1.TipoCompra.LOCAL
+                tipoCompra: enums_1.TipoCompra.LOCAL
             },
             {
                 fecha: new Date('2024-01-16 14:20:00'),
@@ -589,10 +589,10 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 total: 49.00,
                 metodoPago: 'Tarjeta',
                 cajero: 'Carlos Rodríguez',
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 49,
                 puntosUsados: 0,
-                tipoCompra: venta_entity_1.TipoCompra.DELIVERY
+                tipoCompra: enums_1.TipoCompra.DELIVERY
             },
             {
                 fecha: new Date('2024-01-17 18:10:00'),
@@ -606,10 +606,10 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 total: 10.35,
                 metodoPago: 'Plin',
                 cajero: 'María González',
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 10,
                 puntosUsados: 5,
-                tipoCompra: venta_entity_1.TipoCompra.LOCAL
+                tipoCompra: enums_1.TipoCompra.LOCAL
             },
             {
                 fecha: new Date('2024-01-18 20:30:00'),
@@ -621,12 +621,12 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 subTotal: 38.00,
                 descuento: 0.00,
                 total: 38.00,
-                metodoPago: 'Efectivo',
+                metodoPago: enums_1.MetodoPago.EFECTIVO,
                 cajero: 'Carlos Rodríguez',
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 38,
                 puntosUsados: 0,
-                tipoCompra: venta_entity_1.TipoCompra.LOCAL,
+                tipoCompra: enums_1.TipoCompra.LOCAL,
                 comentario: 'Pedido para llevar'
             }
         ];
@@ -643,7 +643,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 cliente: clientes[0],
                 pedidoId: 1,
                 direccion: 'Av. Los Olivos 123, Lima',
-                estado: delivery_entity_1.EstadoDelivery.ENTREGADO,
+                estado: enums_1.EstadoDelivery.ENTREGADO,
                 repartidor: 'Miguel Delivery',
                 horaSalida: '19:15',
                 horaEntrega: '19:45',
@@ -657,7 +657,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 cliente: clientes[2],
                 pedidoId: 3,
                 direccion: 'Calle Los Pinos 789, Lima',
-                estado: delivery_entity_1.EstadoDelivery.ENTREGADO,
+                estado: enums_1.EstadoDelivery.ENTREGADO,
                 repartidor: 'Carlos Delivery',
                 horaSalida: '20:45',
                 horaEntrega: '21:20',
@@ -671,10 +671,10 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 cliente: clientes[1],
                 pedidoId: 2,
                 direccion: 'Jr. Las Flores 456, Lima',
-                estado: delivery_entity_1.EstadoDelivery.EN_CAMINO,
+                estado: enums_1.EstadoDelivery.EN_CAMINO,
                 repartidor: 'Miguel Delivery',
                 horaSalida: '18:15',
-                horaEntrega: null,
+                horaEntrega: undefined,
                 saleId: 2,
                 phone: '912345678',
                 deliveryFee: 4.00,
@@ -685,10 +685,10 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 cliente: clientes[3],
                 pedidoId: 4,
                 direccion: 'Av. Central 321, Lima',
-                estado: delivery_entity_1.EstadoDelivery.ASIGNADO,
+                estado: enums_1.EstadoDelivery.ASIGNADO,
                 repartidor: 'Carlos Delivery',
-                horaSalida: null,
-                horaEntrega: null,
+                horaSalida: undefined,
+                horaEntrega: undefined,
                 saleId: 4,
                 phone: '955443322',
                 deliveryFee: 6.00
@@ -698,10 +698,10 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 cliente: clientes[4],
                 pedidoId: 5,
                 direccion: 'Jr. Independencia 654, Lima',
-                estado: delivery_entity_1.EstadoDelivery.PENDIENTE,
+                estado: enums_1.EstadoDelivery.PENDIENTE,
                 repartidor: '',
-                horaSalida: null,
-                horaEntrega: null,
+                horaSalida: undefined,
+                horaEntrega: undefined,
                 saleId: 5,
                 phone: '977889900',
                 deliveryFee: 5.50,
@@ -723,7 +723,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 precioVenta: 6.00,
                 existencia: 120,
                 invMinimo: 20,
-                tipo: create_movimiento_dto_1.TipoMovimiento.ENTRADA,
+                tipo: enums_1.TipoMovimiento.ENTRADA,
                 cantidad: 50,
                 cajero: 'Ana Martínez',
                 proveedor: 'Backus'
@@ -736,7 +736,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 precioVenta: 6.00,
                 existencia: 118,
                 invMinimo: 20,
-                tipo: create_movimiento_dto_1.TipoMovimiento.SALIDA,
+                tipo: enums_1.TipoMovimiento.SALIDA,
                 cantidad: 2,
                 cajero: 'María González'
             },
@@ -748,7 +748,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 precioVenta: 5.50,
                 existencia: 100,
                 invMinimo: 15,
-                tipo: create_movimiento_dto_1.TipoMovimiento.ENTRADA,
+                tipo: enums_1.TipoMovimiento.ENTRADA,
                 cantidad: 40,
                 cajero: 'Ana Martínez',
                 proveedor: 'Backus'
@@ -761,7 +761,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 precioVenta: 45.00,
                 existencia: 30,
                 invMinimo: 5,
-                tipo: create_movimiento_dto_1.TipoMovimiento.AJUSTE,
+                tipo: enums_1.TipoMovimiento.AJUSTE,
                 cantidad: 30,
                 cajero: 'Ana Martínez'
             },
@@ -773,7 +773,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 precioVenta: 2.00,
                 existencia: 250,
                 invMinimo: 50,
-                tipo: create_movimiento_dto_1.TipoMovimiento.ENTRADA,
+                tipo: enums_1.TipoMovimiento.ENTRADA,
                 cantidad: 100,
                 cajero: 'Ana Martínez',
                 proveedor: 'San Luis'

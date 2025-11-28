@@ -10,7 +10,7 @@ export declare class UsersService {
     create(createUserDto: CreateUserDto): Promise<Usuario>;
     findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Usuario>>;
     findById(id: number): Promise<Usuario>;
-    findByUsername(username: string): Promise<Usuario>;
+    findByUsername(username: string): Promise<Usuario | null>;
     update(id: number, updateUserDto: UpdateUserDto): Promise<Usuario>;
     remove(id: number): Promise<void>;
     activate(id: number): Promise<Usuario>;

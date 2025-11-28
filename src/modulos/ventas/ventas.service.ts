@@ -9,6 +9,16 @@ import { PaginatedResult } from '../../common/interfaces/paginated-result.interf
 import { ProductosService } from '../productos/productos.service';
 import { ClientesService } from '../clientes/clientes.service';
 
+interface ProductoValidado {
+  productoId: number;
+  codigoBarra: string;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  valorPuntos: number;
+}
+
 @Injectable()
 export class VentasService {
   constructor(
@@ -24,19 +34,19 @@ export class VentasService {
     const { clienteId, listaProductos, puntosUsados } = createVentaDto;
 
     // Validar cliente si se proporciona
-    let cliente: Cliente = null;
+    let cliente: Cliente | null = null;
     if (clienteId) {
       cliente = await this.clientesService.findById(clienteId);
       
       // Validar puntos si se van a usar
-      if (puntosUsados > 0 && cliente.puntosAcumulados < puntosUsados) {
+      if (puntosUsados && puntosUsados > 0 && cliente.puntosAcumulados < puntosUsados) {
         throw new BadRequestException('El cliente no tiene suficientes puntos');
       }
     }
 
     // Validar productos y calcular totales
     let subTotal = 0;
-    const productosValidados = [];
+    const productosValidados: ProductoValidado[] = [];
 
     for (const item of listaProductos) {
       const producto = await this.productosService.findById(item.productoId);
@@ -63,7 +73,7 @@ export class VentasService {
     }
 
     // Calcular descuento por puntos usados (1 punto = 0.10 soles)
-    const descuentoPorPuntos = puntosUsados * 0.10;
+    const descuentoPorPuntos = (puntosUsados || 0) * 0.10;
     const descuentoTotal = (createVentaDto.descuento || 0) + descuentoPorPuntos;
     const total = subTotal - descuentoTotal;
 
@@ -80,7 +90,7 @@ export class VentasService {
     // Crear la venta
     const venta = this.ventaRepository.create({
       ...createVentaDto,
-      cliente,
+      cliente: cliente || undefined,
       listaProductos: productosValidados,
       subTotal,
       descuento: descuentoTotal,
@@ -92,7 +102,7 @@ export class VentasService {
       estado: EstadoVenta.COMPLETADO,
     });
 
-    const ventaGuardada = await this.ventaRepository.save(venta);
+    const ventaGuardada = await this.ventaRepository.save(venta) as Venta;
 
     // Descontar stock de productos
     for (const item of productosValidados) {
@@ -106,7 +116,7 @@ export class VentasService {
 
     // Actualizar puntos del cliente
     if (cliente) {
-      if (puntosUsados > 0) {
+      if (puntosUsados && puntosUsados > 0) {
         await this.clientesService.canjearPuntos(
           cliente.id,
           puntosUsados,
@@ -138,16 +148,16 @@ export class VentasService {
       order: { fecha: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -186,16 +196,16 @@ export class VentasService {
       order: { fecha: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -210,16 +220,16 @@ export class VentasService {
       order: { fecha: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -352,4 +362,3 @@ export class VentasService {
     return `${dateStr}-${secuencial}`;
   }
 }
-

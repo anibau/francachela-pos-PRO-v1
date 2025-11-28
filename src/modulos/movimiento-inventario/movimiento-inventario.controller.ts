@@ -10,11 +10,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { MovimientoInventarioService } from './movimiento-inventario.service';
-import { CreateMovimientoDto, TipoMovimiento } from './dto/create-movimiento.dto';
+import { CreateMovimientoDto } from './dto/create-movimiento.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../entities/usuario.entity';
+import { UserRole, TipoMovimiento } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Movimiento Inventario')

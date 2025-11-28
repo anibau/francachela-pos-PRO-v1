@@ -17,9 +17,8 @@ import { UpdatePromocionDto } from './dto/update-promocion.dto';
 import { JwtAuthGuard } from '../../../src/modulos/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../entities/usuario.entity';
+import { UserRole, TipoPromocion } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { TipoPromocion } from '../../entities/promocion.entity';
 
 @ApiTags('Promociones')
 @Controller('promociones')
@@ -115,4 +114,3 @@ export class PromocionesController {
     return this.promocionesService.desactivarVencidas();
   }
 }
-

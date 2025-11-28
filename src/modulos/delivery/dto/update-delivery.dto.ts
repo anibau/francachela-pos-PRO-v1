@@ -1,5 +1,6 @@
 import { PartialType } from '@nestjs/swagger';
-import { CreateDeliveryDto, EstadoDelivery } from './create-delivery.dto';
+import { CreateDeliveryDto } from './create-delivery.dto';
+import { EstadoDelivery } from '../../../common/enums';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -23,4 +24,3 @@ export class UpdateDeliveryDto extends PartialType(CreateDeliveryDto) {
   @IsString()
   horaEntrega?: string;
 }
-

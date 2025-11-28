@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual, MoreThanOrEqual, And } from 'typeorm';
-import { Promocion, TipoPromocion } from '../../entities/promocion.entity';
+import { Promocion } from '../../entities/promocion.entity';
+import { TipoPromocion } from '../../common/enums';
 import { CreatePromocionDto } from './dto/create-promocion.dto';
 import { UpdatePromocionDto } from './dto/update-promocion.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -28,16 +29,16 @@ export class PromocionesService {
       order: { fechaCreacion: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -111,8 +112,8 @@ export class PromocionesService {
       case TipoPromocion.MONTO:
         descuento = promocion.descuento;
         break;
-      case TipoPromocion.DOS_X_UNO:
-      case TipoPromocion.TRES_X_DOS:
+      case TipoPromocion.DOS_POR_UNO:
+      case TipoPromocion.TRES_POR_DOS:
         // Estos se manejan a nivel de productos específicos
         descuento = 0;
         break;

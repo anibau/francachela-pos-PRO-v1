@@ -7,14 +7,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-
-export enum EstadoDelivery {
-  PENDIENTE = 'PENDIENTE',
-  ASIGNADO = 'ASIGNADO',
-  EN_CAMINO = 'EN_CAMINO',
-  ENTREGADO = 'ENTREGADO',
-  CANCELADO = 'CANCELADO'
-}
+import { EstadoDelivery } from '../../../common/enums';
 
 export class CreateDeliveryDto {
   @ApiPropertyOptional({ description: 'ID del cliente', example: 1 })
@@ -54,4 +47,3 @@ export class CreateDeliveryDto {
   @IsString()
   notes?: string;
 }
-

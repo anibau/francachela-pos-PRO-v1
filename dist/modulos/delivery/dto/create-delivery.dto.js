@@ -9,18 +9,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateDeliveryDto = exports.EstadoDelivery = void 0;
+exports.CreateDeliveryDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
-var EstadoDelivery;
-(function (EstadoDelivery) {
-    EstadoDelivery["PENDIENTE"] = "PENDIENTE";
-    EstadoDelivery["ASIGNADO"] = "ASIGNADO";
-    EstadoDelivery["EN_CAMINO"] = "EN_CAMINO";
-    EstadoDelivery["ENTREGADO"] = "ENTREGADO";
-    EstadoDelivery["CANCELADO"] = "CANCELADO";
-})(EstadoDelivery || (exports.EstadoDelivery = EstadoDelivery = {}));
 class CreateDeliveryDto {
     clienteId;
     pedidoId;

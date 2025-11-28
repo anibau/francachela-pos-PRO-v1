@@ -1,12 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-
-export enum TipoMovimiento {
-  ENTRADA = 'ENTRADA',
-  SALIDA = 'SALIDA',
-  AJUSTE = 'AJUSTE',
-  VENTA = 'VENTA',
-  DEVOLUCION = 'DEVOLUCION',
-}
+import { TipoMovimiento } from '../common/enums';
 
 @Entity('movimientos_inventario')
 export class MovimientoInventario {
@@ -33,6 +26,9 @@ export class MovimientoInventario {
 
   @Column('int')
   existenciaNueva: number;
+
+  @Column('int')
+  existencia: number; // Alias para compatibilidad
 
   @Column('int')
   invMinimo: number;
@@ -68,4 +64,3 @@ export class MovimientoInventario {
   @UpdateDateColumn()
   fechaActualizacion: Date;
 }
-

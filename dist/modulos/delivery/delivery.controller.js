@@ -21,7 +21,7 @@ const update_delivery_dto_1 = require("./dto/update-delivery.dto");
 const jwt_auth_guard_1 = require("../../../src/modulos/auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
-const usuario_entity_1 = require("../../entities/usuario.entity");
+const enums_1 = require("../../common/enums");
 const pagination_dto_1 = require("../../common/dto/pagination.dto");
 let DeliveryController = class DeliveryController {
     deliveryService;
@@ -78,7 +78,7 @@ let DeliveryController = class DeliveryController {
 exports.DeliveryController = DeliveryController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Crear nuevo delivery' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Delivery creado exitosamente' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Datos inválidos' }),
@@ -89,7 +89,7 @@ __decorate([
 ], DeliveryController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener todos los deliveries' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Lista de deliveries obtenida exitosamente' }),
     __param(0, (0, common_1.Query)()),
@@ -99,7 +99,7 @@ __decorate([
 ], DeliveryController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('hoy'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener deliveries del día actual' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Deliveries del día obtenidos exitosamente' }),
     __metadata("design:type", Function),
@@ -108,7 +108,7 @@ __decorate([
 ], DeliveryController.prototype, "getDeliveriesDelDia", null);
 __decorate([
     (0, common_1.Get)('repartidores'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener lista de repartidores' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Repartidores obtenidos exitosamente' }),
     __metadata("design:type", Function),
@@ -117,7 +117,7 @@ __decorate([
 ], DeliveryController.prototype, "getRepartidores", null);
 __decorate([
     (0, common_1.Get)('estadisticas'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener estadísticas de delivery por rango de fechas' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' }),
@@ -130,7 +130,7 @@ __decorate([
 ], DeliveryController.prototype, "getEstadisticas", null);
 __decorate([
     (0, common_1.Get)('estado/:estado'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener deliveries por estado' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Deliveries por estado obtenidos exitosamente' }),
     __param(0, (0, common_1.Param)('estado')),
@@ -141,7 +141,7 @@ __decorate([
 ], DeliveryController.prototype, "findByEstado", null);
 __decorate([
     (0, common_1.Get)('repartidor/:repartidor'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener deliveries por repartidor' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Deliveries del repartidor obtenidos exitosamente' }),
     __param(0, (0, common_1.Param)('repartidor')),
@@ -152,7 +152,7 @@ __decorate([
 ], DeliveryController.prototype, "findByRepartidor", null);
 __decorate([
     (0, common_1.Get)('rango'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener deliveries por rango de fechas' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' }),
     (0, swagger_1.ApiQuery)({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' }),
@@ -166,7 +166,7 @@ __decorate([
 ], DeliveryController.prototype, "findByDateRange", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener delivery por ID' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Delivery encontrado' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Delivery no encontrado' }),
@@ -177,7 +177,7 @@ __decorate([
 ], DeliveryController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Actualizar delivery' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Delivery actualizado exitosamente' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Delivery no encontrado' }),
@@ -189,7 +189,7 @@ __decorate([
 ], DeliveryController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':id/asignar'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Asignar repartidor a delivery' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Repartidor asignado exitosamente' }),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
@@ -200,7 +200,7 @@ __decorate([
 ], DeliveryController.prototype, "asignarRepartidor", null);
 __decorate([
     (0, common_1.Patch)(':id/en-camino'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Marcar delivery en camino' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Delivery marcado en camino' }),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
@@ -211,7 +211,7 @@ __decorate([
 ], DeliveryController.prototype, "marcarEnCamino", null);
 __decorate([
     (0, common_1.Patch)(':id/entregado'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Marcar delivery como entregado' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Delivery marcado como entregado' }),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
@@ -222,7 +222,7 @@ __decorate([
 ], DeliveryController.prototype, "marcarEntregado", null);
 __decorate([
     (0, common_1.Patch)(':id/cancelar'),
-    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.ADMIN, enums_1.UserRole.CAJERO),
     (0, swagger_1.ApiOperation)({ summary: 'Cancelar delivery' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Delivery cancelado exitosamente' }),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),

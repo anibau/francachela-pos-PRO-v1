@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { MovimientoInventario } from '../../entities/movimiento-inventario.entity';
 import { Producto } from '../../entities/producto.entity';
-import { CreateMovimientoDto, TipoMovimiento } from './dto/create-movimiento.dto';
+import { CreateMovimientoDto } from './dto/create-movimiento.dto';
+import { TipoMovimiento } from '../../common/enums';
 import { UpdateMovimientoDto } from './dto/update-movimiento.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
@@ -59,7 +60,9 @@ export class MovimientoInventarioService {
       cajero: createMovimientoDto.cajero,
       proveedor: createMovimientoDto.proveedor,
       descripcion: producto.productoDescripcion,
-      existencia: producto.cantidadActual,
+      existenciaAnterior: producto.cantidadActual,
+      existenciaNueva: nuevaCantidad,
+      existencia: nuevaCantidad,
       invMinimo: producto.cantidadMinima,
     });
 
@@ -163,16 +166,16 @@ export class MovimientoInventarioService {
       order: { hora: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 
@@ -186,16 +189,16 @@ export class MovimientoInventarioService {
       order: { hora: 'DESC' },
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 10));
 
     return {
       data,
       total,
-      page,
-      limit,
+      page: page || 1,
+      limit: limit || 10,
       totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 

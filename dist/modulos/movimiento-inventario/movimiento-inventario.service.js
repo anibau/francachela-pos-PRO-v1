@@ -18,7 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const movimiento_inventario_entity_1 = require("../../entities/movimiento-inventario.entity");
 const producto_entity_1 = require("../../entities/producto.entity");
-const create_movimiento_dto_1 = require("./dto/create-movimiento.dto");
+const enums_1 = require("../../common/enums");
 let MovimientoInventarioService = class MovimientoInventarioService {
     movimientoRepository;
     productoRepository;
@@ -33,20 +33,20 @@ let MovimientoInventarioService = class MovimientoInventarioService {
         if (!producto) {
             throw new common_1.NotFoundException('Producto no encontrado');
         }
-        if (createMovimientoDto.tipo === create_movimiento_dto_1.TipoMovimiento.SALIDA) {
+        if (createMovimientoDto.tipo === enums_1.TipoMovimiento.SALIDA) {
             if (producto.usaInventario && producto.cantidadActual < createMovimientoDto.cantidad) {
                 throw new common_1.BadRequestException('Stock insuficiente para realizar la salida');
             }
         }
         let nuevaCantidad = producto.cantidadActual;
         switch (createMovimientoDto.tipo) {
-            case create_movimiento_dto_1.TipoMovimiento.ENTRADA:
+            case enums_1.TipoMovimiento.ENTRADA:
                 nuevaCantidad += createMovimientoDto.cantidad;
                 break;
-            case create_movimiento_dto_1.TipoMovimiento.SALIDA:
+            case enums_1.TipoMovimiento.SALIDA:
                 nuevaCantidad -= createMovimientoDto.cantidad;
                 break;
-            case create_movimiento_dto_1.TipoMovimiento.AJUSTE:
+            case enums_1.TipoMovimiento.AJUSTE:
                 nuevaCantidad = createMovimientoDto.cantidad;
                 break;
         }
@@ -59,7 +59,9 @@ let MovimientoInventarioService = class MovimientoInventarioService {
             cajero: createMovimientoDto.cajero,
             proveedor: createMovimientoDto.proveedor,
             descripcion: producto.productoDescripcion,
-            existencia: producto.cantidadActual,
+            existenciaAnterior: producto.cantidadActual,
+            existenciaNueva: nuevaCantidad,
+            existencia: nuevaCantidad,
             invMinimo: producto.cantidadMinima,
         });
         if (producto.usaInventario) {
@@ -144,15 +146,15 @@ let MovimientoInventarioService = class MovimientoInventarioService {
             take: limit,
             order: { hora: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async findByCajero(cajero, paginationDto) {
@@ -163,15 +165,15 @@ let MovimientoInventarioService = class MovimientoInventarioService {
             take: limit,
             order: { hora: 'DESC' },
         });
-        const totalPages = Math.ceil(total / limit);
+        const totalPages = Math.ceil(total / (limit || 10));
         return {
             data,
             total,
-            page,
-            limit,
+            page: page || 1,
+            limit: limit || 10,
             totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
+            hasNextPage: (page || 1) < totalPages,
+            hasPrevPage: (page || 1) > 1,
         };
     }
     async getMovimientosDelDia() {
@@ -210,10 +212,10 @@ let MovimientoInventarioService = class MovimientoInventarioService {
             return acc;
         }, {});
         const valorTotalEntradas = movimientos
-            .filter(m => m.tipo === create_movimiento_dto_1.TipoMovimiento.ENTRADA)
+            .filter(m => m.tipo === enums_1.TipoMovimiento.ENTRADA)
             .reduce((sum, m) => sum + (m.cantidad * m.costo), 0);
         const valorTotalSalidas = movimientos
-            .filter(m => m.tipo === create_movimiento_dto_1.TipoMovimiento.SALIDA)
+            .filter(m => m.tipo === enums_1.TipoMovimiento.SALIDA)
             .reduce((sum, m) => sum + (m.cantidad * m.precioVenta), 0);
         return {
             totalMovimientos,
@@ -222,15 +224,15 @@ let MovimientoInventarioService = class MovimientoInventarioService {
             productosMasMovidos,
             valorTotalEntradas,
             valorTotalSalidas,
-            entradas: movimientos.filter(m => m.tipo === create_movimiento_dto_1.TipoMovimiento.ENTRADA).length,
-            salidas: movimientos.filter(m => m.tipo === create_movimiento_dto_1.TipoMovimiento.SALIDA).length,
-            ajustes: movimientos.filter(m => m.tipo === create_movimiento_dto_1.TipoMovimiento.AJUSTE).length,
+            entradas: movimientos.filter(m => m.tipo === enums_1.TipoMovimiento.ENTRADA).length,
+            salidas: movimientos.filter(m => m.tipo === enums_1.TipoMovimiento.SALIDA).length,
+            ajustes: movimientos.filter(m => m.tipo === enums_1.TipoMovimiento.AJUSTE).length,
         };
     }
     async registrarVenta(codigoBarra, cantidad, precioVenta, cajero) {
         const createMovimientoDto = {
             codigoBarra,
-            tipo: create_movimiento_dto_1.TipoMovimiento.SALIDA,
+            tipo: enums_1.TipoMovimiento.SALIDA,
             cantidad,
             costo: 0,
             precioVenta,
@@ -247,7 +249,7 @@ let MovimientoInventarioService = class MovimientoInventarioService {
     async registrarEntrada(codigoBarra, cantidad, costo, precioVenta, cajero, proveedor) {
         const createMovimientoDto = {
             codigoBarra,
-            tipo: create_movimiento_dto_1.TipoMovimiento.ENTRADA,
+            tipo: enums_1.TipoMovimiento.ENTRADA,
             cantidad,
             costo,
             precioVenta,
@@ -259,7 +261,7 @@ let MovimientoInventarioService = class MovimientoInventarioService {
     async registrarAjuste(codigoBarra, nuevaCantidad, costo, precioVenta, cajero) {
         const createMovimientoDto = {
             codigoBarra,
-            tipo: create_movimiento_dto_1.TipoMovimiento.AJUSTE,
+            tipo: enums_1.TipoMovimiento.AJUSTE,
             cantidad: nuevaCantidad,
             costo,
             precioVenta,

@@ -9,16 +9,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateMovimientoDto = exports.TipoMovimiento = void 0;
+exports.CreateMovimientoDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
-var TipoMovimiento;
-(function (TipoMovimiento) {
-    TipoMovimiento["ENTRADA"] = "ENTRADA";
-    TipoMovimiento["SALIDA"] = "SALIDA";
-    TipoMovimiento["AJUSTE"] = "AJUSTE";
-})(TipoMovimiento || (exports.TipoMovimiento = TipoMovimiento = {}));
+const enums_1 = require("../../../common/enums");
 class CreateMovimientoDto {
     codigoBarra;
     tipo;
@@ -38,10 +33,10 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Tipo de movimiento',
-        enum: TipoMovimiento,
-        example: TipoMovimiento.ENTRADA
+        enum: enums_1.TipoMovimiento,
+        example: enums_1.TipoMovimiento.ENTRADA
     }),
-    (0, class_validator_1.IsEnum)(TipoMovimiento),
+    (0, class_validator_1.IsEnum)(enums_1.TipoMovimiento),
     __metadata("design:type", String)
 ], CreateMovimientoDto.prototype, "tipo", void 0);
 __decorate([

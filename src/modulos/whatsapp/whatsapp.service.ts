@@ -97,7 +97,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       
       return { 
         success: true, 
-        messageId: sentMessage?.key?.id 
+        messageId: sentMessage?.key?.id || undefined 
       };
 
     } catch (error) {
@@ -212,4 +212,3 @@ ${productosTexto}
     }
   }
 }
-

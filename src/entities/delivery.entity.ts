@@ -1,13 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Cliente } from './cliente.entity';
-
-export enum EstadoDelivery {
-  PENDIENTE = 'PENDIENTE',
-  EN_PREPARACION = 'EN_PREPARACION',
-  EN_CAMINO = 'EN_CAMINO',
-  ENTREGADO = 'ENTREGADO',
-  CANCELADO = 'CANCELADO',
-}
+import { EstadoDelivery } from '../common/enums';
 
 @Entity('delivery')
 export class Delivery {
@@ -70,4 +63,3 @@ export class Delivery {
   @UpdateDateColumn()
   fechaActualizacion: Date;
 }
-
