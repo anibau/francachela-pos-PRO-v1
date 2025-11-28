@@ -6,14 +6,17 @@ import { AppService } from './app.service';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import * as entities from './entities';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { ProductosModule } from './productos/productos.module';
-import { ClientesModule } from './clientes/clientes.module';
-import { VentasModule } from './ventas/ventas.module';
-import { PromocionesModule } from './promociones/promociones.module';
-import { CajaModule } from './caja/caja.module';
-import { GastosModule } from './gastos/gastos.module';
+import { AuthModule } from './modulos/auth/auth.module';
+import { UsersModule } from './modulos/users/users.module';
+import { ProductosModule } from './modulos/productos/productos.module';
+import { ClientesModule } from './modulos/clientes/clientes.module';
+import { VentasModule } from './modulos/ventas/ventas.module';
+import { PromocionesModule } from './modulos/promociones/promociones.module';
+import { CajaModule } from './modulos/caja/caja.module';
+import { GastosModule } from './modulos/gastos/gastos.module';
+import { CombosModule } from './modulos/combos/combos.module';
+import { DeliveryModule } from './modulos/delivery/delivery.module';
+import { MovimientoInventarioModule } from './modulos/movimiento-inventario/movimiento-inventario.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { GastosModule } from './gastos/gastos.module';
     PromocionesModule,
     CajaModule,
     GastosModule,
+    CombosModule,
+    DeliveryModule,
+    MovimientoInventarioModule,
   ],
   controllers: [AppController],
   providers: [AppService],
