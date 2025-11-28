@@ -8,6 +8,12 @@ import jwtConfig from './config/jwt.config';
 import * as entities from './entities';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ProductosModule } from './productos/productos.module';
+import { ClientesModule } from './clientes/clientes.module';
+import { VentasModule } from './ventas/ventas.module';
+import { PromocionesModule } from './promociones/promociones.module';
+import { CajaModule } from './caja/caja.module';
+import { GastosModule } from './gastos/gastos.module';
 
 @Module({
   imports: [
@@ -32,6 +38,12 @@ import { UsersModule } from './users/users.module';
     }),
     AuthModule,
     UsersModule,
+    ProductosModule,
+    ClientesModule,
+    VentasModule,
+    PromocionesModule,
+    CajaModule,
+    GastosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
