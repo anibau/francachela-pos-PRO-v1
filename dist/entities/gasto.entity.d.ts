@@ -1,12 +1,4 @@
-import { MetodoPago } from './venta.entity';
-export declare enum CategoriaGasto {
-    COMPRAS = "COMPRAS",
-    SERVICIOS = "SERVICIOS",
-    MANTENIMIENTO = "MANTENIMIENTO",
-    PERSONAL = "PERSONAL",
-    MARKETING = "MARKETING",
-    OTROS = "OTROS"
-}
+import { MetodoPago, CategoriaGasto } from '../common/enums';
 export declare class Gasto {
     id: number;
     fecha: Date;

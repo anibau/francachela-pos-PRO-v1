@@ -8,8 +8,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { CategoriaGasto } from '../../../entities/gasto.entity';
-import { MetodoPago } from '../../../entities/venta.entity';
+import { CategoriaGasto, MetodoPago } from '../../../common/enums';
 
 export class CreateGastoDto {
   @ApiProperty({ description: 'Descripción del gasto', example: 'Compra de productos de limpieza' })
@@ -26,7 +25,7 @@ export class CreateGastoDto {
   @ApiProperty({ 
     description: 'Categoría del gasto',
     enum: CategoriaGasto,
-    example: CategoriaGasto.COMPRAS
+    example: CategoriaGasto.OPERATIVO
   })
   @IsEnum(CategoriaGasto)
   categoria: CategoriaGasto;
@@ -54,4 +53,3 @@ export class CreateGastoDto {
   @IsString()
   comprobante?: string;
 }
-

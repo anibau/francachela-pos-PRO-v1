@@ -179,10 +179,14 @@ let ClientesService = class ClientesService {
     }
     async activate(id) {
         await this.clienteRepository.update(id, { activo: true });
-        return this.clienteRepository.findOne({ where: { id } });
+        const cliente = await this.clienteRepository.findOne({ where: { id } });
+        if (!cliente) {
+            throw new common_1.NotFoundException(`Cliente con ID ${id} no encontrado`);
+        }
+        return cliente;
     }
     async generateCodigoCorto() {
-        let codigo;
+        let codigo = '';
         let exists = true;
         while (exists) {
             codigo = Math.random().toString(36).substring(2, 8).toUpperCase();

@@ -24,7 +24,7 @@ const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const usuario_entity_1 = require("../../entities/usuario.entity");
 const pagination_dto_1 = require("../../common/dto/pagination.dto");
-const gasto_entity_1 = require("../../entities/gasto.entity");
+const enums_1 = require("../../common/enums");
 let GastosController = class GastosController {
     gastosService;
     constructor(gastosService) {

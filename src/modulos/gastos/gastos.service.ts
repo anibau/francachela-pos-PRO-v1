@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like } from 'typeorm';
-import { Gasto, CategoriaGasto } from '../../entities/gasto.entity';
+import { Gasto } from '../../entities/gasto.entity';
+import { CategoriaGasto } from '../../common/enums';
 import { CreateGastoDto } from './dto/create-gasto.dto';
 import { UpdateGastoDto } from './dto/update-gasto.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';

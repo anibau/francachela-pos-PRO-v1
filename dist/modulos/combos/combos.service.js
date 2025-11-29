@@ -95,7 +95,12 @@ let CombosService = class CombosService {
         if (precioCombo >= precioOriginal) {
             throw new common_1.BadRequestException('El precio del combo debe ser menor al precio original');
         }
-        await this.comboRepository.update(id, updateComboDto);
+        const { productos, ...updateData } = updateComboDto;
+        await this.comboRepository.update(id, updateData);
+        if (productos) {
+            combo.productos = productos;
+            await this.comboRepository.save(combo);
+        }
         return this.findById(id);
     }
     async remove(id) {

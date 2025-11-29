@@ -211,11 +211,15 @@ export class ClientesService {
 
   async activate(id: number): Promise<Cliente> {
     await this.clienteRepository.update(id, { activo: true });
-    return this.clienteRepository.findOne({ where: { id } });
+    const cliente = await this.clienteRepository.findOne({ where: { id } });
+    if (!cliente) {
+      throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+    }
+    return cliente;
   }
 
   private async generateCodigoCorto(): Promise<string> {
-    let codigo: string;
+    let codigo: string = '';
     let exists = true;
 
     while (exists) {

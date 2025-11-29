@@ -13,8 +13,7 @@ exports.CreateGastoDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
-const gasto_entity_1 = require("../../../entities/gasto.entity");
-const venta_entity_1 = require("../../../entities/venta.entity");
+const enums_1 = require("../../../common/enums");
 class CreateGastoDto {
     descripcion;
     monto;
@@ -41,19 +40,19 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Categoría del gasto',
-        enum: gasto_entity_1.CategoriaGasto,
-        example: gasto_entity_1.CategoriaGasto.COMPRAS
+        enum: enums_1.CategoriaGasto,
+        example: enums_1.CategoriaGasto.OPERATIVO
     }),
-    (0, class_validator_1.IsEnum)(gasto_entity_1.CategoriaGasto),
+    (0, class_validator_1.IsEnum)(enums_1.CategoriaGasto),
     __metadata("design:type", String)
 ], CreateGastoDto.prototype, "categoria", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Método de pago utilizado',
-        enum: venta_entity_1.MetodoPago,
-        example: venta_entity_1.MetodoPago.EFECTIVO
+        enum: enums_1.MetodoPago,
+        example: enums_1.MetodoPago.EFECTIVO
     }),
-    (0, class_validator_1.IsEnum)(venta_entity_1.MetodoPago),
+    (0, class_validator_1.IsEnum)(enums_1.MetodoPago),
     __metadata("design:type", String)
 ], CreateGastoDto.prototype, "metodoPago", void 0);
 __decorate([

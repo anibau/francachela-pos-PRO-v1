@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const caja_entity_1 = require("../../entities/caja.entity");
 const venta_entity_1 = require("../../entities/venta.entity");
+const enums_1 = require("../../common/enums");
 const gasto_entity_1 = require("../../entities/gasto.entity");
 let CajaService = class CajaService {
     cajaRepository;
@@ -120,7 +121,7 @@ let CajaService = class CajaService {
             where: {
                 fecha: (0, typeorm_2.Between)(fechaInicio, fechaFin),
                 cajero: caja.cajero,
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
             },
         });
         const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0);

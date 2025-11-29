@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const gasto_entity_1 = require("../../entities/gasto.entity");
+const enums_1 = require("../../common/enums");
 let GastosService = class GastosService {
     gastoRepository;
     constructor(gastoRepository) {
@@ -197,7 +198,7 @@ let GastosService = class GastosService {
         };
     }
     async getCategorias() {
-        return Object.values(gasto_entity_1.CategoriaGasto);
+        return Object.values(enums_1.CategoriaGasto);
     }
 };
 exports.GastosService = GastosService;
