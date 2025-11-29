@@ -8,6 +8,7 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
     private initializeWhatsApp;
+    private createLogger;
     sendMessage(sendMessageDto: SendMessageDto): Promise<{
         success: boolean;
         messageId?: string;

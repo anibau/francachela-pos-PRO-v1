@@ -4,7 +4,8 @@ import makeWASocket, {
   DisconnectReason, 
   useMultiFileAuthState,
   WASocket,
-  proto
+  proto,
+  makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -24,7 +25,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     if (this.socket) {
-      this.socket.end(undefined);
+      await this.socket.end(undefined);
     }
   }
 
@@ -40,16 +41,9 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.socket = makeWASocket({
         auth: state,
         printQRInTerminal: true,
-        logger: {
-          level: 'silent',
-          child: () => ({ level: 'silent' } as any),
-          trace: () => {},
-          debug: () => {},
-          info: () => {},
-          warn: () => {},
-          error: () => {},
-          fatal: () => {}
-        } as any,
+        logger: this.createLogger(),
+        generateHighQualityLinkPreview: true,
+        defaultQueryTimeoutMs: 0,
       });
 
       this.socket.ev.on('connection.update', (update: Partial<ConnectionState>) => {
@@ -79,6 +73,37 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error('Error inicializando WhatsApp:', error);
     }
+  }
+
+  private createLogger(): any {
+    const baseLogger = {
+      trace: (msg: string) => { /* silent */ },
+      debug: (msg: string) => { /* silent */ },
+      info: (msg: string) => { /* silent */ },
+      warn: (msg: string) => { /* silent */ },
+      error: (msg: string | any) => { /* silent */ },
+      fatal: (msg: string | any) => { /* silent */ }
+    };
+
+    return {
+      level: 'silent',
+      child: () => ({
+        level: 'silent',
+        trace: (msg: string) => { /* silent */ },
+        debug: (msg: string) => { /* silent */ },
+        info: (msg: string) => { /* silent */ },
+        warn: (msg: string) => { /* silent */ },
+        error: (msg: string | any) => { /* silent */ },
+        fatal: (msg: string | any) => { /* silent */ },
+        child: () => baseLogger
+      }),
+      trace: (msg: string) => { /* silent */ },
+      debug: (msg: string) => { /* silent */ },
+      info: (msg: string) => { /* silent */ },
+      warn: (msg: string) => { /* silent */ },
+      error: (msg: string | any) => { /* silent */ },
+      fatal: (msg: string | any) => { /* silent */ }
+    };
   }
 
   async sendMessage(sendMessageDto: SendMessageDto): Promise<{ success: boolean; messageId?: string; error?: string }> {

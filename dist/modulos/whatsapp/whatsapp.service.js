@@ -54,7 +54,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     }
     async onModuleDestroy() {
         if (this.socket) {
-            this.socket.end(undefined);
+            await this.socket.end(undefined);
         }
     }
     async initializeWhatsApp() {
@@ -66,16 +66,9 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.socket = (0, baileys_1.default)({
                 auth: state,
                 printQRInTerminal: true,
-                logger: {
-                    level: 'silent',
-                    child: () => ({ level: 'silent' }),
-                    trace: () => { },
-                    debug: () => { },
-                    info: () => { },
-                    warn: () => { },
-                    error: () => { },
-                    fatal: () => { }
-                },
+                logger: this.createLogger(),
+                generateHighQualityLinkPreview: true,
+                defaultQueryTimeoutMs: 0,
             });
             this.socket.ev.on('connection.update', (update) => {
                 const { connection, lastDisconnect, qr } = update;
@@ -101,6 +94,35 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         catch (error) {
             this.logger.error('Error inicializando WhatsApp:', error);
         }
+    }
+    createLogger() {
+        const baseLogger = {
+            trace: (msg) => { },
+            debug: (msg) => { },
+            info: (msg) => { },
+            warn: (msg) => { },
+            error: (msg) => { },
+            fatal: (msg) => { }
+        };
+        return {
+            level: 'silent',
+            child: () => ({
+                level: 'silent',
+                trace: (msg) => { },
+                debug: (msg) => { },
+                info: (msg) => { },
+                warn: (msg) => { },
+                error: (msg) => { },
+                fatal: (msg) => { },
+                child: () => baseLogger
+            }),
+            trace: (msg) => { },
+            debug: (msg) => { },
+            info: (msg) => { },
+            warn: (msg) => { },
+            error: (msg) => { },
+            fatal: (msg) => { }
+        };
     }
     async sendMessage(sendMessageDto) {
         try {
