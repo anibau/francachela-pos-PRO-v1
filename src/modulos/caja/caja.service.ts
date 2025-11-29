@@ -2,7 +2,8 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Caja, EstadoCaja } from '../../entities/caja.entity';
-import { Venta, EstadoVenta } from '../../entities/venta.entity';
+import { Venta } from '../../entities/venta.entity';
+import { EstadoVenta } from '../../common/enums';
 import { Gasto } from '../../entities/gasto.entity';
 import { AbrirCajaDto } from './dto/abrir-caja.dto';
 import { CerrarCajaDto } from './dto/cerrar-caja.dto';

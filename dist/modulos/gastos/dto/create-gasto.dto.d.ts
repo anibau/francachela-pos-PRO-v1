@@ -1,5 +1,4 @@
-import { CategoriaGasto } from '../../../entities/gasto.entity';
-import { MetodoPago } from '../../../entities/venta.entity';
+import { CategoriaGasto, MetodoPago } from '../../../common/enums';
 export declare class CreateGastoDto {
     descripcion: string;
     monto: number;

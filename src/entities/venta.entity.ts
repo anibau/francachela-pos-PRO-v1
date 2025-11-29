@@ -1,24 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Cliente } from './cliente.entity';
-
-export enum EstadoVenta {
-  COMPLETADO = 'COMPLETADO',
-  ANULADO = 'ANULADO',
-  PENDIENTE = 'PENDIENTE',
-}
-
-export enum TipoCompra {
-  LOCAL = 'LOCAL',
-  DELIVERY = 'DELIVERY',
-}
-
-export enum MetodoPago {
-  EFECTIVO = 'EFECTIVO',
-  YAPE = 'YAPE',
-  PLIN = 'PLIN',
-  TARJETA = 'TARJETA',
-  TRANSFERENCIA = 'TRANSFERENCIA',
-}
+import { EstadoVenta, TipoCompra, MetodoPago } from '../common/enums';
 
 @Entity('ventas')
 export class Venta {
@@ -95,4 +77,3 @@ export class Venta {
   @UpdateDateColumn()
   fechaActualizacion: Date;
 }
-

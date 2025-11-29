@@ -1,4 +1,4 @@
-import { MetodoPago, TipoCompra } from '../../../entities/venta.entity';
+import { MetodoPago, TipoCompra } from '../../../common/enums';
 export declare class ItemVentaDto {
     productoId: number;
     cantidad: number;

@@ -20,7 +20,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { CategoriaGasto } from '../../entities/gasto.entity';
+import { CategoriaGasto } from '../../common/enums';
 
 @ApiTags('Gastos')
 @Controller('gastos')
@@ -153,4 +153,3 @@ export class GastosController {
     return this.gastosService.remove(id);
   }
 }
-

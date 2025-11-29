@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const venta_entity_1 = require("../../entities/venta.entity");
+const enums_1 = require("../../common/enums");
 const cliente_entity_1 = require("../../entities/cliente.entity");
 const productos_service_1 = require("../productos/productos.service");
 const clientes_service_1 = require("../clientes/clientes.service");
@@ -79,7 +80,7 @@ let VentasService = class VentasService {
             puntosUsados: puntosUsados || 0,
             ticketId,
             cajero,
-            estado: venta_entity_1.EstadoVenta.COMPLETADO,
+            estado: enums_1.EstadoVenta.COMPLETADO,
         });
         const ventaGuardada = await this.ventaRepository.save(venta);
         for (const item of productosValidados) {
@@ -178,7 +179,7 @@ let VentasService = class VentasService {
     }
     async anularVenta(id, cajero) {
         const venta = await this.findById(id);
-        if (venta.estado === venta_entity_1.EstadoVenta.ANULADO) {
+        if (venta.estado === enums_1.EstadoVenta.ANULADO) {
             throw new common_1.BadRequestException('La venta ya está anulada');
         }
         for (const item of venta.listaProductos) {
@@ -192,7 +193,7 @@ let VentasService = class VentasService {
                 await this.clientesService.acumularPuntos(venta.cliente.id, venta.puntosUsados, venta.id, 0);
             }
         }
-        await this.ventaRepository.update(id, { estado: venta_entity_1.EstadoVenta.ANULADO });
+        await this.ventaRepository.update(id, { estado: enums_1.EstadoVenta.ANULADO });
         return this.findById(id);
     }
     async getVentasDelDia() {
@@ -202,7 +203,7 @@ let VentasService = class VentasService {
         const ventas = await this.ventaRepository.find({
             where: {
                 fecha: (0, typeorm_2.Between)(startOfDay, endOfDay),
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
             },
             relations: ['cliente'],
             order: { fecha: 'DESC' },
@@ -215,7 +216,7 @@ let VentasService = class VentasService {
         const ventas = await this.ventaRepository.find({
             where: {
                 fecha: (0, typeorm_2.Between)(fechaInicio, fechaFin),
-                estado: venta_entity_1.EstadoVenta.COMPLETADO,
+                estado: enums_1.EstadoVenta.COMPLETADO,
             },
             relations: ['cliente'],
         });

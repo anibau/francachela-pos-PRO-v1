@@ -1,20 +1,5 @@
 import { Cliente } from './cliente.entity';
-export declare enum EstadoVenta {
-    COMPLETADO = "COMPLETADO",
-    ANULADO = "ANULADO",
-    PENDIENTE = "PENDIENTE"
-}
-export declare enum TipoCompra {
-    LOCAL = "LOCAL",
-    DELIVERY = "DELIVERY"
-}
-export declare enum MetodoPago {
-    EFECTIVO = "EFECTIVO",
-    YAPE = "YAPE",
-    PLIN = "PLIN",
-    TARJETA = "TARJETA",
-    TRANSFERENCIA = "TRANSFERENCIA"
-}
+import { EstadoVenta, TipoCompra, MetodoPago } from '../common/enums';
 export declare class Venta {
     id: number;
     fecha: Date;

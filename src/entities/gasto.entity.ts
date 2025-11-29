@@ -1,14 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { MetodoPago } from './venta.entity';
-
-export enum CategoriaGasto {
-  COMPRAS = 'COMPRAS',
-  SERVICIOS = 'SERVICIOS',
-  MANTENIMIENTO = 'MANTENIMIENTO',
-  PERSONAL = 'PERSONAL',
-  MARKETING = 'MARKETING',
-  OTROS = 'OTROS',
-}
+import { MetodoPago, CategoriaGasto } from '../common/enums';
 
 @Entity('gastos')
 export class Gasto {
@@ -56,4 +47,3 @@ export class Gasto {
   @UpdateDateColumn()
   fechaActualizacion: Date;
 }
-

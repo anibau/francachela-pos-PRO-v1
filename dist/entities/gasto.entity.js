@@ -9,18 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Gasto = exports.CategoriaGasto = void 0;
+exports.Gasto = void 0;
 const typeorm_1 = require("typeorm");
-const venta_entity_1 = require("./venta.entity");
-var CategoriaGasto;
-(function (CategoriaGasto) {
-    CategoriaGasto["COMPRAS"] = "COMPRAS";
-    CategoriaGasto["SERVICIOS"] = "SERVICIOS";
-    CategoriaGasto["MANTENIMIENTO"] = "MANTENIMIENTO";
-    CategoriaGasto["PERSONAL"] = "PERSONAL";
-    CategoriaGasto["MARKETING"] = "MARKETING";
-    CategoriaGasto["OTROS"] = "OTROS";
-})(CategoriaGasto || (exports.CategoriaGasto = CategoriaGasto = {}));
+const enums_1 = require("../common/enums");
 let Gasto = class Gasto {
     id;
     fecha;
@@ -55,8 +46,8 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: CategoriaGasto,
-        default: CategoriaGasto.OTROS,
+        enum: enums_1.CategoriaGasto,
+        default: enums_1.CategoriaGasto.OTROS,
     }),
     __metadata("design:type", String)
 ], Gasto.prototype, "categoria", void 0);
@@ -71,8 +62,8 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: venta_entity_1.MetodoPago,
-        default: venta_entity_1.MetodoPago.EFECTIVO,
+        enum: enums_1.MetodoPago,
+        default: enums_1.MetodoPago.EFECTIVO,
     }),
     __metadata("design:type", String)
 ], Gasto.prototype, "metodoPago", void 0);

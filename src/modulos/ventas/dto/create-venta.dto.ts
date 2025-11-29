@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { MetodoPago, TipoCompra } from '../../../entities/venta.entity';
+import { MetodoPago, TipoCompra } from '../../../common/enums';
 
 export class ItemVentaDto {
   @ApiProperty({ description: 'ID del producto', example: 1 })
@@ -86,4 +86,3 @@ export class CreateVentaDto {
   @Min(0)
   puntosUsados?: number = 0;
 }
-

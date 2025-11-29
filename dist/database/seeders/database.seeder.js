@@ -536,7 +536,8 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             }
         ];
         for (const gastoData of gastos) {
-            await this.gastoRepository.save(gastoData);
+            const gasto = this.gastoRepository.create(gastoData);
+            await this.gastoRepository.save(gasto);
         }
     }
     async seedVentas() {
@@ -545,7 +546,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
         const ventas = [
             {
                 fecha: new Date('2024-01-15 12:30:00'),
-                cliente: clientes[0],
+                clienteId: clientes[0]?.id,
                 listaProductos: [
                     { id: 1, cantidad: 2, precio: 6.00, subtotal: 12.00, descripcion: 'Cerveza Pilsen 650ml' },
                     { id: 4, cantidad: 1, precio: 15.00, subtotal: 15.00, descripcion: 'Chicharrón Preparado' }
@@ -563,14 +564,14 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             },
             {
                 fecha: new Date('2024-01-15 15:45:00'),
-                cliente: clientes[1],
+                clienteId: clientes[1]?.id,
                 listaProductos: [
                     { id: 2, cantidad: 3, precio: 5.50, subtotal: 16.50, descripcion: 'Cerveza Cristal 630ml' }
                 ],
                 subTotal: 16.50,
                 descuento: 0.00,
                 total: 16.50,
-                metodoPago: 'Yape',
+                metodoPago: enums_1.MetodoPago.YAPE,
                 cajero: 'María González',
                 estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 16,
@@ -579,7 +580,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             },
             {
                 fecha: new Date('2024-01-16 14:20:00'),
-                cliente: clientes[2],
+                clienteId: clientes[2]?.id,
                 listaProductos: [
                     { id: 3, cantidad: 1, precio: 45.00, subtotal: 45.00, descripcion: 'Pisco Quebranta 750ml' },
                     { id: 5, cantidad: 2, precio: 2.00, subtotal: 4.00, descripcion: 'Agua Mineral 500ml' }
@@ -587,7 +588,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 subTotal: 49.00,
                 descuento: 0.00,
                 total: 49.00,
-                metodoPago: 'Tarjeta',
+                metodoPago: enums_1.MetodoPago.TARJETA,
                 cajero: 'Carlos Rodríguez',
                 estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 49,
@@ -596,7 +597,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             },
             {
                 fecha: new Date('2024-01-17 18:10:00'),
-                cliente: clientes[3],
+                clienteId: clientes[3]?.id,
                 listaProductos: [
                     { id: 1, cantidad: 1, precio: 6.00, subtotal: 6.00, descripcion: 'Cerveza Pilsen 650ml' },
                     { id: 2, cantidad: 1, precio: 5.50, subtotal: 5.50, descripcion: 'Cerveza Cristal 630ml' }
@@ -604,7 +605,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
                 subTotal: 11.50,
                 descuento: 1.15,
                 total: 10.35,
-                metodoPago: 'Plin',
+                metodoPago: enums_1.MetodoPago.PLIN,
                 cajero: 'María González',
                 estado: enums_1.EstadoVenta.COMPLETADO,
                 puntosOtorgados: 10,
@@ -613,7 +614,7 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             },
             {
                 fecha: new Date('2024-01-18 20:30:00'),
-                cliente: clientes[4],
+                clienteId: clientes[4]?.id,
                 listaProductos: [
                     { id: 4, cantidad: 2, precio: 15.00, subtotal: 30.00, descripcion: 'Chicharrón Preparado' },
                     { id: 5, cantidad: 4, precio: 2.00, subtotal: 8.00, descripcion: 'Agua Mineral 500ml' }
@@ -631,7 +632,8 @@ let DatabaseSeeder = DatabaseSeeder_1 = class DatabaseSeeder {
             }
         ];
         for (const ventaData of ventas) {
-            await this.ventaRepository.save(ventaData);
+            const venta = this.ventaRepository.create(ventaData);
+            await this.ventaRepository.save(venta);
         }
     }
     async seedDeliveries() {

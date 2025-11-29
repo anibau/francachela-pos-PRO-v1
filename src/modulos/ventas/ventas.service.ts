@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Venta, EstadoVenta } from '../../entities/venta.entity';
+import { Venta } from '../../entities/venta.entity';
+import { EstadoVenta } from '../../common/enums';
 import { Cliente } from '../../entities/cliente.entity';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';

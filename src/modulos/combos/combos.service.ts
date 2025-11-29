@@ -109,7 +109,18 @@ export class CombosService {
       throw new BadRequestException('El precio del combo debe ser menor al precio original');
     }
 
-    await this.comboRepository.update(id, updateComboDto);
+    // Separar productos del resto de datos
+    const { productos, ...updateData } = updateComboDto;
+    
+    // Actualizar datos básicos del combo
+    await this.comboRepository.update(id, updateData);
+    
+    // Si se proporcionaron productos, actualizar la entidad completa
+    if (productos) {
+      combo.productos = productos;
+      await this.comboRepository.save(combo);
+    }
+    
     return this.findById(id);
   }
 

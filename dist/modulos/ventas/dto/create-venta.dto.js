@@ -13,7 +13,7 @@ exports.CreateVentaDto = exports.ItemVentaDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
-const venta_entity_1 = require("../../../entities/venta.entity");
+const enums_1 = require("../../../common/enums");
 class ItemVentaDto {
     productoId;
     cantidad;
@@ -44,7 +44,7 @@ class CreateVentaDto {
     descuento = 0;
     metodoPago;
     comentario;
-    tipoCompra = venta_entity_1.TipoCompra.LOCAL;
+    tipoCompra = enums_1.TipoCompra.LOCAL;
     montoRecibido;
     puntosUsados = 0;
 }
@@ -76,10 +76,10 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Método de pago',
-        enum: venta_entity_1.MetodoPago,
-        example: venta_entity_1.MetodoPago.EFECTIVO
+        enum: enums_1.MetodoPago,
+        example: enums_1.MetodoPago.EFECTIVO
     }),
-    (0, class_validator_1.IsEnum)(venta_entity_1.MetodoPago),
+    (0, class_validator_1.IsEnum)(enums_1.MetodoPago),
     __metadata("design:type", String)
 ], CreateVentaDto.prototype, "metodoPago", void 0);
 __decorate([
@@ -91,12 +91,12 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Tipo de compra',
-        enum: venta_entity_1.TipoCompra,
-        example: venta_entity_1.TipoCompra.LOCAL,
-        default: venta_entity_1.TipoCompra.LOCAL
+        enum: enums_1.TipoCompra,
+        example: enums_1.TipoCompra.LOCAL,
+        default: enums_1.TipoCompra.LOCAL
     }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(venta_entity_1.TipoCompra),
+    (0, class_validator_1.IsEnum)(enums_1.TipoCompra),
     __metadata("design:type", String)
 ], CreateVentaDto.prototype, "tipoCompra", void 0);
 __decorate([

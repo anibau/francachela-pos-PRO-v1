@@ -9,28 +9,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Venta = exports.MetodoPago = exports.TipoCompra = exports.EstadoVenta = void 0;
+exports.Venta = void 0;
 const typeorm_1 = require("typeorm");
 const cliente_entity_1 = require("./cliente.entity");
-var EstadoVenta;
-(function (EstadoVenta) {
-    EstadoVenta["COMPLETADO"] = "COMPLETADO";
-    EstadoVenta["ANULADO"] = "ANULADO";
-    EstadoVenta["PENDIENTE"] = "PENDIENTE";
-})(EstadoVenta || (exports.EstadoVenta = EstadoVenta = {}));
-var TipoCompra;
-(function (TipoCompra) {
-    TipoCompra["LOCAL"] = "LOCAL";
-    TipoCompra["DELIVERY"] = "DELIVERY";
-})(TipoCompra || (exports.TipoCompra = TipoCompra = {}));
-var MetodoPago;
-(function (MetodoPago) {
-    MetodoPago["EFECTIVO"] = "EFECTIVO";
-    MetodoPago["YAPE"] = "YAPE";
-    MetodoPago["PLIN"] = "PLIN";
-    MetodoPago["TARJETA"] = "TARJETA";
-    MetodoPago["TRANSFERENCIA"] = "TRANSFERENCIA";
-})(MetodoPago || (exports.MetodoPago = MetodoPago = {}));
+const enums_1 = require("../common/enums");
 let Venta = class Venta {
     id;
     fecha;
@@ -90,8 +72,8 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: MetodoPago,
-        default: MetodoPago.EFECTIVO,
+        enum: enums_1.MetodoPago,
+        default: enums_1.MetodoPago.EFECTIVO,
     }),
     __metadata("design:type", String)
 ], Venta.prototype, "metodoPago", void 0);
@@ -106,8 +88,8 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: EstadoVenta,
-        default: EstadoVenta.COMPLETADO,
+        enum: enums_1.EstadoVenta,
+        default: enums_1.EstadoVenta.COMPLETADO,
     }),
     __metadata("design:type", String)
 ], Venta.prototype, "estado", void 0);
@@ -126,8 +108,8 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: TipoCompra,
-        default: TipoCompra.LOCAL,
+        enum: enums_1.TipoCompra,
+        default: enums_1.TipoCompra.LOCAL,
     }),
     __metadata("design:type", String)
 ], Venta.prototype, "tipoCompra", void 0);

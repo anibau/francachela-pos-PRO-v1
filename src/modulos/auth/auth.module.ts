@@ -15,7 +15,7 @@ import { UsersModule } from '../users/users.module';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('jwt.secret') || 'default-secret-key',
         signOptions: {
-          expiresIn: configService.get<string>('jwt.expiresIn') || '1h',
+          expiresIn: '1h',
         },
       }),
       inject: [ConfigService],
