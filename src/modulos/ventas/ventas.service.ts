@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Venta } from '../../entities/venta.entity';
@@ -9,6 +9,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { ProductosService } from '../productos/productos.service';
 import { ClientesService } from '../clientes/clientes.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 interface ProductoValidado {
   productoId: number;
@@ -22,6 +23,8 @@ interface ProductoValidado {
 
 @Injectable()
 export class VentasService {
+  private readonly logger = new Logger(VentasService.name);
+
   constructor(
     @InjectRepository(Venta)
     private ventaRepository: Repository<Venta>,
@@ -29,6 +32,7 @@ export class VentasService {
     private clienteRepository: Repository<Cliente>,
     private productosService: ProductosService,
     private clientesService: ClientesService,
+    private whatsappService: WhatsappService,
   ) {}
 
   async create(createVentaDto: CreateVentaDto, cajero: string): Promise<Venta> {
@@ -133,6 +137,28 @@ export class VentasService {
           ventaGuardada.id,
           total,
         );
+      }
+    }
+
+    // Enviar notificación automática por WhatsApp si el cliente tiene teléfono
+    if (cliente && cliente.telefono) {
+      try {
+        this.logger.log(`📱 Enviando notificación WhatsApp a ${cliente.telefono} para venta #${ventaGuardada.id}`);
+        
+        const resultado = await this.whatsappService.sendVentaNotification(
+          cliente.telefono,
+          ventaGuardada.total,
+          ventaGuardada.puntosOtorgados,
+          ventaGuardada.id,
+        );
+        
+        if (resultado.success) {
+          this.logger.log(`✅ Notificación WhatsApp enviada exitosamente a ${cliente.telefono}`);
+        } else {
+          this.logger.warn(`⚠️ Error al enviar WhatsApp: ${resultado.error}`);
+        }
+      } catch (error) {
+        this.logger.warn(`⚠️ No se pudo enviar notificación WhatsApp al cliente: ${error.message}`);
       }
     }
 
@@ -273,7 +299,36 @@ export class VentasService {
     }
 
     await this.ventaRepository.update(id, { estado: EstadoVenta.ANULADO });
-    return this.findById(id);
+    const ventaAnulada = await this.findById(id);
+
+    // Enviar notificación de anulación por WhatsApp si el cliente tiene teléfono
+    if (venta.cliente && venta.cliente.telefono) {
+      try {
+        this.logger.log(`📱 Enviando notificación de anulación WhatsApp a ${venta.cliente.telefono}`);
+        
+        const mensaje = `⚠️ Tu venta ha sido anulada\n\n` +
+          `🎫 Ticket: ${venta.ticketId}\n` +
+          `💰 Monto: S/ ${venta.total.toFixed(2)}\n` +
+          `⭐ Puntos revertidos: ${venta.puntosOtorgados}\n\n` +
+          `Para más información, contacta a Francachela. 📞`;
+        
+        const resultado = await this.whatsappService.sendMessage({
+          phone: venta.cliente.telefono,
+          message: mensaje,
+          ventaId: id,
+        });
+        
+        if (resultado.success) {
+          this.logger.log(`✅ Notificación de anulación enviada a ${venta.cliente.telefono}`);
+        } else {
+          this.logger.warn(`⚠️ Error al enviar notificación: ${resultado.error}`);
+        }
+      } catch (error) {
+        this.logger.warn(`⚠️ No se pudo enviar notificación de anulación: ${error.message}`);
+      }
+    }
+
+    return ventaAnulada;
   }
 
   async getVentasDelDia(): Promise<{ ventas: Venta[], totalVentas: number, totalMonto: number }> {

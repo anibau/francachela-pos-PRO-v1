@@ -6,12 +6,14 @@ import { Venta } from '../../entities/venta.entity';
 import { Cliente } from '../../entities/cliente.entity';
 import { ProductosModule } from '../productos/productos.module';
 import { ClientesModule } from '../clientes/clientes.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Venta, Cliente]),
     ProductosModule,
     ClientesModule,
+    WhatsappModule,
   ],
   controllers: [VentasController],
   providers: [VentasService],

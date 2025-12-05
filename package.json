@@ -1,5 +1,5 @@
 {
-  "name": "francachela-pos-PRO-v1",
+  "name": "francachela-pos-pro-v1-backend",
   "version": "0.0.1",
   "description": "Backend API para Sistema de Ventas e Inventario Francachela - NestJS + TypeORM + PostgreSQL + Baileys",
   "author": "",
