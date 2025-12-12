@@ -485,7 +485,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 ---
 
-## 🔧 EJEMPLO 6: Venta Con Precio Unitario Personalizado
+## 🔧 EJEMPLO 6: Venta Con Precio Unitario Personalizado (precio mayoreo)
 
 **Caso de Uso:** Oferta especial donde el precio es diferente al de lista.
 
@@ -517,7 +517,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 **Detalles:**
 - Producto: Cerveza Arequipeña 350ml
 - Precio normal: S/ 6.00
-- Precio especial: S/ 5.50
+- Precio mayoreo: S/ 5.50  
 - Cantidad: 12
 - Subtotal: 12 × 5.50 = S/ 66.00
 - **Total: S/ 66.00**

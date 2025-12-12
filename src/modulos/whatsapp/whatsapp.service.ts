@@ -245,17 +245,17 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     phone: string, 
     total: number, 
     puntosGanados: number, 
-    ventaId: number
+    ticketId: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const message = `🍻 ¡Gracias por tu compra en Francachela!
 
 💰 Total: S/ ${total.toFixed(2)}
 ⭐ Puntos ganados: ${puntosGanados}
-🎫 Ticket #${ventaId}
+🎫 Ticket #${ticketId}
 
 ¡Vuelve pronto y sigue acumulando puntos! 🎉`;
 
-    return this.sendMessage({ phone, message, ventaId });
+    return this.sendMessage({ phone, message });
   }
 
   async sendComboNotification(

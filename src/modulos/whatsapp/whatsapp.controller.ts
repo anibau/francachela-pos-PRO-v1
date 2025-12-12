@@ -38,7 +38,7 @@ export class WhatsappController {
     phone: string;
     total: number;
     puntosGanados: number;
-    ventaId: number;
+    ventaId: string;
   }) {
     return this.whatsappService.sendVentaNotification(
       body.phone,
