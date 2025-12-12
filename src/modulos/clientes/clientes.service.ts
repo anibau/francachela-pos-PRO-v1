@@ -6,12 +6,14 @@ import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class ClientesService {
   constructor(
     @InjectRepository(Cliente)
     private clienteRepository: Repository<Cliente>,
+    private whatsappService: WhatsappService,
   ) {}
 
   async create(createClienteDto: CreateClienteDto): Promise<Cliente> {
@@ -32,7 +34,24 @@ export class ClientesService {
       codigoCorto,
     });
 
-    return this.clienteRepository.save(cliente);
+    const clienteGuardado = await this.clienteRepository.save(cliente);
+
+    // Enviar mensaje de bienvenida por WhatsApp si tiene teléfono
+    if (clienteGuardado.telefono) {
+      try {
+        await this.whatsappService.sendWelcomeMessage(
+          clienteGuardado.telefono,
+          clienteGuardado.nombres,
+          clienteGuardado.apellidos,
+          clienteGuardado.codigoCorto,
+        );
+      } catch (error) {
+        // Log del error pero no fallar la creación del cliente
+        console.error('Error enviando mensaje de bienvenida:', error);
+      }
+    }
+
+    return clienteGuardado;
   }
 
   async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Cliente>> {
@@ -254,5 +273,49 @@ export class ClientesService {
         puntosDisponibles: cliente.puntosAcumulados,
       },
     };
+  }
+
+  async sendClientInfoByDni(dni: string): Promise<{ success: boolean; message: string; cliente?: Cliente }> {
+    try {
+      const cliente = await this.findByDni(dni);
+      
+      if (!cliente.telefono) {
+        return {
+          success: false,
+          message: 'El cliente no tiene número de teléfono registrado',
+          cliente,
+        };
+      }
+
+      const whatsappResult = await this.whatsappService.sendClientInfoMessage(
+        cliente.telefono,
+        cliente.nombres,
+        cliente.apellidos,
+        cliente.codigoCorto,
+        cliente.puntosAcumulados,
+      );
+
+      if (whatsappResult.success) {
+        return {
+          success: true,
+          message: 'Información enviada al cliente exitosamente',
+          cliente,
+        };
+      } else {
+        return {
+          success: false,
+          message: `Error enviando mensaje: ${whatsappResult.error}`,
+          cliente,
+        };
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return {
+          success: false,
+          message: 'Cliente no encontrado con el DNI proporcionado',
+        };
+      }
+      throw error;
+    }
   }
 }

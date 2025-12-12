@@ -9,7 +9,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { WhatsappService } from './whatsapp.service';
 import { SendMessageDto } from './dto/send-message.dto';
-import { JwtAuthGuard } from '../../../src/modulos/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../entities/usuario.entity';
@@ -98,6 +98,24 @@ export class WhatsappController {
     );
   }
 
+  @Post('send-welcome')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @ApiOperation({ summary: 'Enviar mensaje de bienvenida a nuevo cliente' })
+  @ApiResponse({ status: 201, description: 'Mensaje de bienvenida enviado exitosamente' })
+  sendWelcomeMessage(@Body() body: {
+    phone: string;
+    nombres: string;
+    apellidos: string;
+    codigoCorto: string;
+  }) {
+    return this.whatsappService.sendWelcomeMessage(
+      body.phone,
+      body.nombres,
+      body.apellidos,
+      body.codigoCorto
+    );
+  }
+
   @Get('status')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener estado de conexión de WhatsApp' })
@@ -122,4 +140,3 @@ export class WhatsappController {
     return this.whatsappService.logout();
   }
 }
-
