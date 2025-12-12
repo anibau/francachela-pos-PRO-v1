@@ -1,5 +1,5 @@
 {
-  "name": "francachela-pos-PRO-v1",
+  "name": "francachela-pos-pro-v1-backend",
   "version": "0.0.1",
   "description": "Backend API para Sistema de Ventas e Inventario Francachela - NestJS + TypeORM + PostgreSQL + Baileys",
   "author": "",
@@ -35,7 +35,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.3",
     "@nestjs/typeorm": "^11.0.0",
-    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "@whiskeysockets/baileys": "^6.6.10",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",

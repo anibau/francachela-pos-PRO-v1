@@ -38,7 +38,7 @@ export class WhatsappController {
     phone: string;
     total: number;
     puntosGanados: number;
-    ventaId: number;
+    ventaId: string;
   }) {
     return this.whatsappService.sendVentaNotification(
       body.phone,
@@ -126,10 +126,18 @@ export class WhatsappController {
 
   @Get('qr')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Generar código QR para conexión' })
-  @ApiResponse({ status: 200, description: 'QR generado exitosamente' })
-  generateQR() {
-    return this.whatsappService.generateQR();
+  @ApiOperation({ summary: 'Obtener código QR para conexión' })
+  @ApiResponse({ status: 200, description: 'QR obtenido exitosamente' })
+  getQR() {
+    return this.whatsappService.getQR();
+  }
+
+  @Post('reconnect')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Reconectar WhatsApp manualmente' })
+  @ApiResponse({ status: 200, description: 'Reconexión iniciada' })
+  reconnect() {
+    return this.whatsappService.reconnect();
   }
 
   @Delete('logout')

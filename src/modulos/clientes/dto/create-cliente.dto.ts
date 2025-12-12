@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsDateString, IsNotEmpty, Length } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsNotEmpty, Length, IsNumber, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateClienteDto {
   @ApiProperty({ description: 'Nombres del cliente', example: 'Juan Carlos' })
@@ -32,5 +33,12 @@ export class CreateClienteDto {
   @IsOptional()
   @IsString()
   direccion?: string;
+
+  @ApiPropertyOptional({ description: 'Puntos acumulados del cliente', example: 0, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { message: 'puntosAcumulados debe ser un número' })
+  @Min(0, { message: 'puntosAcumulados no puede ser negativo' })
+  puntosAcumulados?: number;
 }
 

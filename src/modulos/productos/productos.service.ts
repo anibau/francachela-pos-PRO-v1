@@ -41,6 +41,7 @@ export class ProductosService {
         precioVenta: savedProduct.precio,
         existenciaAnterior: 0,
         existenciaNueva: savedProduct.cantidadActual,
+        existencia: savedProduct.cantidadActual, // Campo requerido
         invMinimo: savedProduct.cantidadMinima,
         tipo: TipoMovimiento.ENTRADA,
         cantidad: savedProduct.cantidadActual,
@@ -210,6 +211,7 @@ export class ProductosService {
       precioVenta: producto.precio,
       existenciaAnterior,
       existenciaNueva,
+      existencia: existenciaNueva, // Campo requerido
       invMinimo: producto.cantidadMinima,
       tipo,
       cantidad: tipo === TipoMovimiento.AJUSTE ? existenciaNueva - existenciaAnterior : cantidad,
@@ -241,6 +243,7 @@ export class ProductosService {
       precioVenta: producto.precio,
       existenciaAnterior,
       existenciaNueva,
+      existencia: existenciaNueva, // Campo requerido
       invMinimo: producto.cantidadMinima,
       tipo: TipoMovimiento.VENTA,
       cantidad,
@@ -269,6 +272,7 @@ export class ProductosService {
       precioVenta: producto.precio,
       existenciaAnterior,
       existenciaNueva,
+      existencia: existenciaNueva, // Campo requerido
       invMinimo: producto.cantidadMinima,
       tipo: TipoMovimiento.DEVOLUCION,
       cantidad,
