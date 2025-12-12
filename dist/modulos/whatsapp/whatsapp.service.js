@@ -44,6 +44,7 @@ exports.WhatsappService = void 0;
 const common_1 = require("@nestjs/common");
 const baileys_1 = __importStar(require("@whiskeysockets/baileys"));
 const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 let WhatsappService = WhatsappService_1 = class WhatsappService {
     logger = new common_1.Logger(WhatsappService_1.name);
     socket;
@@ -59,6 +60,10 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     }
     async initializeWhatsApp() {
         try {
+            const isSessionValid = await this.validateSessionIntegrity();
+            if (!isSessionValid) {
+                this.logger.log('Sesión corrupta detectada, iniciando con sesión limpia...');
+            }
             if (!fs.existsSync(this.authDir)) {
                 fs.mkdirSync(this.authDir, { recursive: true });
             }
@@ -83,8 +88,16 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
                     this.logger.log('Escanea el código QR para conectar WhatsApp');
                 }
                 if (connection === 'close') {
-                    const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== baileys_1.DisconnectReason.loggedOut;
+                    const error = lastDisconnect?.error?.output?.statusCode;
+                    const message = lastDisconnect?.error?.message?.toLowerCase() || '';
                     this.logger.log('Conexión cerrada debido a:', lastDisconnect?.error);
+                    if (message.includes('bad mac') || message.includes('mac')) {
+                        this.logger.warn('Error Bad MAC detectado - limpiando sesión corrupta');
+                        this.clearSession();
+                        setTimeout(() => this.initializeWhatsApp(), 2000);
+                        return;
+                    }
+                    const shouldReconnect = error !== baileys_1.DisconnectReason.loggedOut;
                     if (shouldReconnect) {
                         this.logger.log('Reconectando...');
                         setTimeout(() => this.initializeWhatsApp(), 5000);
@@ -99,7 +112,16 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.socket.ev.on('creds.update', saveCreds);
         }
         catch (error) {
-            this.logger.error('Error inicializando WhatsApp:', error);
+            const errorMessage = error.message?.toLowerCase() || '';
+            if (errorMessage.includes('bad mac')) {
+                this.logger.error('Error Bad MAC en inicialización - limpiando sesión');
+                this.clearSession();
+                setTimeout(() => this.initializeWhatsApp(), 2000);
+            }
+            else {
+                this.logger.error('Error inicializando WhatsApp:', error);
+                setTimeout(() => this.initializeWhatsApp(), 5000);
+            }
         }
     }
     async sendMessage(sendMessageDto) {
@@ -131,6 +153,8 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
 💰 Total: S/ ${total.toFixed(2)}
 ⭐ Puntos ganados: ${puntosGanados}
 🎫 Ticket #${ventaId}
+
+🌐 Visita nuestra web: https://francachela-licores.github.io/francachela/
 
 ¡Vuelve pronto y sigue acumulando puntos! 🎉`;
         return this.sendMessage({ phone, message, ventaId });
@@ -168,6 +192,31 @@ ${productosTexto}
 ¡Revisa el inventario! 📦`;
         return this.sendMessage({ phone: adminPhone, message });
     }
+    async sendWelcomeMessage(phone, nombres, apellidos, codigoCorto) {
+        const message = `🎉 ¡Bienvenido/a a Francachela, ${nombres} ${apellidos}!
+
+🆔 Tu código de cliente: ${codigoCorto}
+⭐ Empieza a acumular puntos con cada compra
+🎁 Canjea tus puntos por descuentos especiales
+
+🌐 Conoce más en: https://francachela-licores.github.io/francachela/
+
+¡Gracias por elegirnos! 🍻`;
+        return this.sendMessage({ phone, message });
+    }
+    async sendClientInfoMessage(phone, nombres, apellidos, codigoCorto, puntosAcumulados) {
+        const message = `📱 Información de tu cuenta Francachela
+
+👤 Cliente: ${nombres} ${apellidos}
+🆔 Código: ${codigoCorto}
+⭐ Puntos disponibles: ${puntosAcumulados}
+
+🎁 Usa tus puntos para obtener descuentos
+🌐 Visita: https://francachela-licores.github.io/francachela/
+
+¡Gracias por ser cliente! 🍻`;
+        return this.sendMessage({ phone, message });
+    }
     getConnectionStatus() {
         return {
             connected: this.isConnected,
@@ -192,6 +241,43 @@ ${productosTexto}
         catch (error) {
             this.logger.error('Error al cerrar sesión:', error);
             return { success: false };
+        }
+    }
+    async validateSessionIntegrity() {
+        try {
+            if (!fs.existsSync(this.authDir)) {
+                return true;
+            }
+            const files = fs.readdirSync(this.authDir);
+            if (files.length === 0) {
+                return true;
+            }
+            const credsPath = path.join(this.authDir, 'creds.json');
+            if (fs.existsSync(credsPath)) {
+                const creds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
+                if (!creds.signedIdentityKey || !creds.signedPreKey) {
+                    this.logger.warn('Credenciales incompletas detectadas');
+                    fs.rmSync(this.authDir, { recursive: true, force: true });
+                    return false;
+                }
+            }
+            return true;
+        }
+        catch (error) {
+            this.logger.error('Error validando integridad de sesión:', error);
+            this.clearSession();
+            return false;
+        }
+    }
+    clearSession() {
+        try {
+            if (fs.existsSync(this.authDir)) {
+                fs.rmSync(this.authDir, { recursive: true, force: true });
+                this.logger.log('Sesión de WhatsApp limpiada exitosamente');
+            }
+        }
+        catch (error) {
+            this.logger.error('Error limpiando sesión:', error);
         }
     }
 };

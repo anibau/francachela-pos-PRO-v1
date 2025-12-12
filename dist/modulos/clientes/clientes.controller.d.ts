@@ -17,4 +17,9 @@ export declare class ClientesController {
     update(id: number, updateClienteDto: UpdateClienteDto): Promise<import("../../entities").Cliente>;
     remove(id: number): Promise<void>;
     activate(id: number): Promise<import("../../entities").Cliente>;
+    sendClientInfo(dni: string): Promise<{
+        success: boolean;
+        message: string;
+        cliente?: import("../../entities").Cliente;
+    }>;
 }

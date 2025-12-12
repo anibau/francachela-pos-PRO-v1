@@ -41,6 +41,9 @@ let WhatsappController = class WhatsappController {
     sendLowStockAlert(body) {
         return this.whatsappService.sendLowStockAlert(body.adminPhone, body.productos);
     }
+    sendWelcomeMessage(body) {
+        return this.whatsappService.sendWelcomeMessage(body.phone, body.nombres, body.apellidos, body.codigoCorto);
+    }
     getStatus() {
         return this.whatsappService.getConnectionStatus();
     }
@@ -103,6 +106,16 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], WhatsappController.prototype, "sendLowStockAlert", null);
+__decorate([
+    (0, common_1.Post)('send-welcome'),
+    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, swagger_1.ApiOperation)({ summary: 'Enviar mensaje de bienvenida a nuevo cliente' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Mensaje de bienvenida enviado exitosamente' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], WhatsappController.prototype, "sendWelcomeMessage", null);
 __decorate([
     (0, common_1.Get)('status'),
     (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),

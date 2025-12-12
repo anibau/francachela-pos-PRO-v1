@@ -98,6 +98,24 @@ export class WhatsappController {
     );
   }
 
+  @Post('send-welcome')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @ApiOperation({ summary: 'Enviar mensaje de bienvenida a nuevo cliente' })
+  @ApiResponse({ status: 201, description: 'Mensaje de bienvenida enviado exitosamente' })
+  sendWelcomeMessage(@Body() body: {
+    phone: string;
+    nombres: string;
+    apellidos: string;
+    codigoCorto: string;
+  }) {
+    return this.whatsappService.sendWelcomeMessage(
+      body.phone,
+      body.nombres,
+      body.apellidos,
+      body.codigoCorto
+    );
+  }
+
   @Get('status')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener estado de conexión de WhatsApp' })
@@ -122,4 +140,3 @@ export class WhatsappController {
     return this.whatsappService.logout();
   }
 }
-

@@ -50,6 +50,16 @@ export declare class WhatsappController {
         messageId?: string;
         error?: string;
     }>;
+    sendWelcomeMessage(body: {
+        phone: string;
+        nombres: string;
+        apellidos: string;
+        codigoCorto: string;
+    }): Promise<{
+        success: boolean;
+        messageId?: string;
+        error?: string;
+    }>;
     getStatus(): {
         connected: boolean;
         phone?: string;

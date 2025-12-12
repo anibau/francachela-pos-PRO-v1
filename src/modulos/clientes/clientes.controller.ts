@@ -135,5 +135,14 @@ export class ClientesController {
   activate(@Param('id', ParseIntPipe) id: number) {
     return this.clientesService.activate(id);
   }
-}
 
+  @Post('send-info/:dni')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @ApiOperation({ summary: 'Enviar información del cliente por WhatsApp usando DNI' })
+  @ApiResponse({ status: 201, description: 'Información enviada exitosamente' })
+  @ApiResponse({ status: 404, description: 'Cliente no encontrado' })
+  @ApiResponse({ status: 400, description: 'Cliente sin teléfono o error enviando mensaje' })
+  sendClientInfo(@Param('dni') dni: string) {
+    return this.clientesService.sendClientInfoByDni(dni);
+  }
+}

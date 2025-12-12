@@ -4,9 +4,11 @@ import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 export declare class ClientesService {
     private clienteRepository;
-    constructor(clienteRepository: Repository<Cliente>);
+    private whatsappService;
+    constructor(clienteRepository: Repository<Cliente>, whatsappService: WhatsappService);
     create(createClienteDto: CreateClienteDto): Promise<Cliente>;
     findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Cliente>>;
     findById(id: number): Promise<Cliente>;
@@ -22,4 +24,9 @@ export declare class ClientesService {
     activate(id: number): Promise<Cliente>;
     private generateCodigoCorto;
     getEstadisticasCliente(id: number): Promise<any>;
+    sendClientInfoByDni(dni: string): Promise<{
+        success: boolean;
+        message: string;
+        cliente?: Cliente;
+    }>;
 }

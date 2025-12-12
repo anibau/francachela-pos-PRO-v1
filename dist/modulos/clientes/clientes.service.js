@@ -17,10 +17,13 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const cliente_entity_1 = require("../../entities/cliente.entity");
+const whatsapp_service_1 = require("../whatsapp/whatsapp.service");
 let ClientesService = class ClientesService {
     clienteRepository;
-    constructor(clienteRepository) {
+    whatsappService;
+    constructor(clienteRepository, whatsappService) {
         this.clienteRepository = clienteRepository;
+        this.whatsappService = whatsappService;
     }
     async create(createClienteDto) {
         const existingClient = await this.clienteRepository.findOne({
@@ -34,7 +37,16 @@ let ClientesService = class ClientesService {
             ...createClienteDto,
             codigoCorto,
         });
-        return this.clienteRepository.save(cliente);
+        const clienteGuardado = await this.clienteRepository.save(cliente);
+        if (clienteGuardado.telefono) {
+            try {
+                await this.whatsappService.sendWelcomeMessage(clienteGuardado.telefono, clienteGuardado.nombres, clienteGuardado.apellidos, clienteGuardado.codigoCorto);
+            }
+            catch (error) {
+                console.error('Error enviando mensaje de bienvenida:', error);
+            }
+        }
+        return clienteGuardado;
     }
     async findAll(paginationDto) {
         const { page, limit, skip } = paginationDto;
@@ -214,11 +226,48 @@ let ClientesService = class ClientesService {
             },
         };
     }
+    async sendClientInfoByDni(dni) {
+        try {
+            const cliente = await this.findByDni(dni);
+            if (!cliente.telefono) {
+                return {
+                    success: false,
+                    message: 'El cliente no tiene número de teléfono registrado',
+                    cliente,
+                };
+            }
+            const whatsappResult = await this.whatsappService.sendClientInfoMessage(cliente.telefono, cliente.nombres, cliente.apellidos, cliente.codigoCorto, cliente.puntosAcumulados);
+            if (whatsappResult.success) {
+                return {
+                    success: true,
+                    message: 'Información enviada al cliente exitosamente',
+                    cliente,
+                };
+            }
+            else {
+                return {
+                    success: false,
+                    message: `Error enviando mensaje: ${whatsappResult.error}`,
+                    cliente,
+                };
+            }
+        }
+        catch (error) {
+            if (error instanceof common_1.NotFoundException) {
+                return {
+                    success: false,
+                    message: 'Cliente no encontrado con el DNI proporcionado',
+                };
+            }
+            throw error;
+        }
+    }
 };
 exports.ClientesService = ClientesService;
 exports.ClientesService = ClientesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(cliente_entity_1.Cliente)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        whatsapp_service_1.WhatsappService])
 ], ClientesService);
 //# sourceMappingURL=clientes.service.js.map

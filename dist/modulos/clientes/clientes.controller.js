@@ -64,6 +64,9 @@ let ClientesController = class ClientesController {
     activate(id) {
         return this.clientesService.activate(id);
     }
+    sendClientInfo(dni) {
+        return this.clientesService.sendClientInfoByDni(dni);
+    }
 };
 exports.ClientesController = ClientesController;
 __decorate([
@@ -197,6 +200,18 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], ClientesController.prototype, "activate", null);
+__decorate([
+    (0, common_1.Post)('send-info/:dni'),
+    (0, roles_decorator_1.Roles)(usuario_entity_1.UserRole.ADMIN, usuario_entity_1.UserRole.CAJERO),
+    (0, swagger_1.ApiOperation)({ summary: 'Enviar información del cliente por WhatsApp usando DNI' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Información enviada exitosamente' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Cliente no encontrado' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Cliente sin teléfono o error enviando mensaje' }),
+    __param(0, (0, common_1.Param)('dni')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ClientesController.prototype, "sendClientInfo", null);
 exports.ClientesController = ClientesController = __decorate([
     (0, swagger_1.ApiTags)('Clientes'),
     (0, common_1.Controller)('clientes'),

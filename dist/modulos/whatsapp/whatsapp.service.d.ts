@@ -37,6 +37,16 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
         messageId?: string;
         error?: string;
     }>;
+    sendWelcomeMessage(phone: string, nombres: string, apellidos: string, codigoCorto: string): Promise<{
+        success: boolean;
+        messageId?: string;
+        error?: string;
+    }>;
+    sendClientInfoMessage(phone: string, nombres: string, apellidos: string, codigoCorto: string, puntosAcumulados: number): Promise<{
+        success: boolean;
+        messageId?: string;
+        error?: string;
+    }>;
     getConnectionStatus(): {
         connected: boolean;
         phone?: string;
@@ -45,4 +55,6 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
     logout(): Promise<{
         success: boolean;
     }>;
+    private validateSessionIntegrity;
+    private clearSession;
 }
