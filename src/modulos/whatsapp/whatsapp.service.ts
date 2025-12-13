@@ -39,17 +39,29 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   }
 
   private cleanup() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-    
-    if (this.socket) {
-      try {
-        this.socket.end(undefined);
-      } catch (error) {
-        this.logger.warn('Error al cerrar socket:', error.message);
+    try {
+      // Limpiar timeout de reconexión
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
       }
+      
+      // Cerrar socket de manera segura
+      if (this.socket) {
+        try {
+          // Intentar cerrar la conexión gracefully
+          this.socket.end(undefined);
+          
+          this.logger.log('Socket cerrado correctamente');
+        } catch (error) {
+          this.logger.warn('Error al cerrar socket:', error?.message || error);
+        }
+      }
+
+      this.isConnected = false;
+      this.isConnecting = false;
+    } catch (error) {
+      this.logger.error('Error en cleanup:', error);
     }
   }
 
@@ -61,6 +73,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.isConnecting = true;
+    this.isConnected = false; // Resetear flag de conexión
 
     try {
       // Validar integridad de la sesión antes de inicializar
@@ -86,15 +99,26 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         printQRInTerminal: false, // Desactivado - manejamos QR manualmente
         logger: this.createLogger(),
         browser: ['Francachela POS', 'Chrome', '120.0.6099.216'],
-        qrTimeout: 60000, // QR válido por 60 segundos
+        qrTimeout: 90000, // QR válido por 90 segundos (aumentado para mejor UX)
         shouldSyncHistoryMessage: () => false, // Función requerida por tipo
-        defaultQueryTimeoutMs: 10000,
-        keepAliveIntervalMs: 30000,
+        defaultQueryTimeoutMs: 15000, // Aumentado de 10s
+        keepAliveIntervalMs: 20000, // Reducido de 30s para mantener conexión activa
+        retryRequestDelayMs: 100, // Intentar más rápido los reintentos
       });
 
-      // === EVENT: QR Code ===
+      // === EVENT: CONNECTION UPDATE - Cambios de estado de conexión ===
       this.socket.ev.on('connection.update', async (update: Partial<ConnectionState>) => {
         const { connection, lastDisconnect, qr } = update;
+
+        // ✅ NUEVO - Detectar conexión exitosa
+        if (connection === 'open') {
+          this.isConnected = true;
+          this.isConnecting = false;
+          this.reconnectAttempts = 0;
+          this.logger.log('✅ Conexión exitosa con WhatsApp - LISTO PARA ENVIAR MENSAJES');
+          this.logger.log('📱 Teléfono conectado:', this.socket?.user?.id?.split(':')[0] || 'Desconocido');
+          return;
+        }
 
         // Mostrar QR cuando está disponible
         if (qr) {
@@ -116,39 +140,70 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         }
 
         if (connection === 'close') {
-          const error = (lastDisconnect?.error as Boom)?.output?.statusCode;
-          const message = (lastDisconnect?.error as any)?.message?.toLowerCase() || '';
+          const boom = lastDisconnect?.error as Boom;
+          const statusCode = boom?.output?.statusCode;
+          const errorMessage = (lastDisconnect?.error as any)?.message?.toLowerCase() || '';
+          const errorData = (lastDisconnect?.error as any)?.data;
           
-          this.logger.log('Conexión cerrada debido a:', lastDisconnect?.error);
+          this.logger.warn(`⚠️ Conexión cerrada - Status: ${statusCode}, Mensaje: ${lastDisconnect?.error?.message || 'Desconocido'}`);
           
-          // Detectar error "Bad MAC" específicamente
-          if (message.includes('bad mac') || message.includes('mac')) {
-            this.logger.warn('Error Bad MAC detectado - limpiando sesión corrupta');
+          // Manejo específico de errores
+          if (errorMessage.includes('bad mac') || errorMessage.includes('mac')) {
+            this.logger.warn('❌ Error Bad MAC detectado - limpiando sesión corrupta');
             this.clearSession();
-            setTimeout(() => this.initializeWhatsApp(), 2000);
+            this.isConnecting = false;
+            this.reconnectAttempts = 0;
+            setTimeout(() => this.initializeWhatsApp(), 3000);
             return;
           }
 
-          const shouldReconnect = error !== DisconnectReason.loggedOut;
-          
-          if (shouldReconnect) {
-            // Intentar reconexión si no alcanzamos máximo
+          // Código 515 - Stream Error (requiere reconexión)
+          if (statusCode === 515 || errorData?.tag === 'stream:error') {
+            this.logger.warn(`🔄 Stream Errored (515) - Intentando reconectar...`);
+            
             if (this.reconnectAttempts < this.maxReconnectAttempts) {
               this.reconnectAttempts++;
-              const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000); // Exponential backoff
+              const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
               
               this.logger.log(`🔄 Reconectando en ${delay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
               
               this.isConnecting = false;
               this.reconnectTimeout = setTimeout(() => this.initializeWhatsApp(), delay);
             } else {
-              this.logger.error(`❌ Máximo de intentos de reconexión alcanzado (${this.maxReconnectAttempts})`);
+              this.logger.error(`❌ Máximo de intentos de reconexión alcanzado para error 515 (${this.maxReconnectAttempts})`);
               this.isConnecting = false;
             }
-          } else {
-            this.logger.log('📴 Sesión cerrada por logout');
+            return;
+          }
+
+          // Logout intencional
+          if (statusCode === DisconnectReason.loggedOut) {
+            this.logger.log('📴 Sesión cerrada por logout intencional');
             this.isConnecting = false;
+            this.isConnected = false;
             this.reconnectAttempts = 0;
+            return;
+          }
+
+          // Otros errores - Intentar reconectar
+          const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+          
+          if (shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+            
+            this.logger.log(`🔄 Reconectando en ${delay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts}) - Status: ${statusCode}`);
+            
+            this.isConnecting = false;
+            this.reconnectTimeout = setTimeout(() => this.initializeWhatsApp(), delay);
+          } else if (!shouldReconnect) {
+            this.logger.log('📴 No reintentar - sesión cerrada por logout');
+            this.isConnecting = false;
+            this.isConnected = false;
+            this.reconnectAttempts = 0;
+          } else {
+            this.logger.error(`❌ Máximo de intentos de reconexión alcanzado (${this.maxReconnectAttempts})`);
+            this.isConnecting = false;
           }
         }
 
@@ -167,10 +222,18 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       if (errorMessage.includes('bad mac')) {
         this.logger.error('Error Bad MAC en inicialización - limpiando sesión');
         this.clearSession();
-        setTimeout(() => this.initializeWhatsApp(), 2000);
+        this.isConnecting = false;
+        setTimeout(() => this.initializeWhatsApp(), 3000);
       } else {
-        this.logger.error('Error inicializando WhatsApp:', error);
-        setTimeout(() => this.initializeWhatsApp(), 5000);
+        this.logger.error('Error inicializando WhatsApp:', error.message || error);
+        this.isConnecting = false;
+        // Reintentar con backoff
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+          this.logger.log(`🔄 Reintentar inicialización en ${delay}ms`);
+          setTimeout(() => this.initializeWhatsApp(), delay);
+        }
       }
     }
   }
@@ -208,10 +271,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   async sendMessage(sendMessageDto: SendMessageDto): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       if (!this.isConnected) {
+        this.logger.warn('Intento de envío sin conexión. Estado: isConnected=' + this.isConnected);
         return { success: false, error: 'WhatsApp no está conectado. Escanea el QR primero.' };
       }
 
       if (!this.socket) {
+        this.logger.error('Socket es null pero isConnected=true');
+        this.isConnected = false;
         return { success: false, error: 'Socket WhatsApp no inicializado' };
       }
 
@@ -220,21 +286,41 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         return { success: false, error: 'Número de teléfono inválido' };
       }
 
+      if (!sendMessageDto.message || sendMessageDto.message.trim().length === 0) {
+        return { success: false, error: 'El mensaje no puede estar vacío' };
+      }
+
       // Formatear JID (Jabber ID)
       const jid = sendMessageDto.phone.includes('@') 
         ? sendMessageDto.phone 
         : `${sendMessageDto.phone}@s.whatsapp.net`;
 
-      const sentMessage = await this.socket.sendMessage(jid, { 
-        text: sendMessageDto.message 
-      });
+      try {
+        const sentMessage = await this.socket.sendMessage(jid, { 
+          text: sendMessageDto.message 
+        });
 
-      this.logger.log(`✉️ Mensaje enviado a ${sendMessageDto.phone}`);
-      
-      return { 
-        success: true, 
-        messageId: sentMessage?.key?.id || undefined 
-      };
+        this.logger.log(`✉️ Mensaje enviado exitosamente a ${sendMessageDto.phone}`);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage?.key?.id || undefined 
+        };
+      } catch (sendError) {
+        const errorMsg = sendError?.message || 'Error desconocido al enviar';
+        
+        // Si hay error de conexión al enviar, marcar como desconectado
+        if (errorMsg.includes('stream') || errorMsg.includes('socket') || errorMsg.includes('connection')) {
+          this.logger.error('❌ Error de conexión detectado durante envío:', errorMsg);
+          this.isConnected = false;
+        }
+
+        this.logger.error(`❌ Error enviando mensaje a ${sendMessageDto.phone}: ${errorMsg}`);
+        return { 
+          success: false, 
+          error: errorMsg 
+        };
+      }
 
     } catch (error) {
       this.logger.error(`❌ Error enviando mensaje: ${error?.message}`);
@@ -357,12 +443,31 @@ ${productosTexto}
     return this.sendMessage({ phone, message });
   }
 
-  getConnectionStatus(): { connected: boolean; phone?: string } {
+  getConnectionStatus(): { 
+    connected: boolean; 
+    phone?: string; 
+    isConnecting: boolean; 
+    qrAvailable: boolean;
+    reconnectAttempts: number;
+    socketHealth: string;
+  } {
+    let socketHealth = '🟢 OK';
+    
+    if (!this.isConnected && !this.isConnecting) {
+      socketHealth = '🔴 DESCONECTADO';
+    } else if (this.isConnecting) {
+      socketHealth = '🟡 CONECTANDO';
+    } else if (this.reconnectAttempts > 0) {
+      socketHealth = '🟠 RECUPERÁNDOSE';
+    }
+
     return {
       connected: this.isConnected,
       isConnecting: this.isConnecting,
       phone: this.socket?.user?.id?.split(':')[0],
-      qrAvailable: !this.isConnected && !!this.qrCode
+      qrAvailable: !this.isConnected && !!this.qrCode,
+      reconnectAttempts: this.reconnectAttempts,
+      socketHealth
     };
   }
 
@@ -390,38 +495,54 @@ ${productosTexto}
 
   async logout(): Promise<{ success: boolean; message: string }> {
     try {
+      this.logger.log('🔐 Iniciando logout de WhatsApp...');
+      
       if (this.socket) {
-        await this.socket.logout();
-        this.isConnected = false;
-        
-        // Limpiar archivos de autenticación
-        if (fs.existsSync(this.authDir)) {
-          fs.rmSync(this.authDir, { recursive: true, force: true });
+        try {
+          await this.socket.logout();
+        } catch (error) {
+          this.logger.warn('Error durante logout de socket:', error?.message);
         }
-        
-        this.reconnectAttempts = 0;
-        this.qrCode = null;
-        this.cleanup();
-        
-        this.logger.log('✅ Sesión de WhatsApp cerrada');
-        return { success: true, message: 'Sesión cerrada exitosamente' };
       }
-      return { success: false, message: 'Socket no inicializado' };
+      
+      // Limpiar recursos
+      this.cleanup();
+      
+      // Limpiar credenciales y sesión
+      if (fs.existsSync(this.authDir)) {
+        fs.rmSync(this.authDir, { recursive: true, force: true });
+        this.logger.log('Credenciales eliminadas');
+      }
+      
+      this.reconnectAttempts = 0;
+      this.qrCode = null;
+      this.isConnected = false;
+      this.isConnecting = false;
+      
+      this.logger.log('✅ Sesión de WhatsApp cerrada completamente');
+      return { success: true, message: 'Sesión cerrada exitosamente' };
     } catch (error) {
-      this.logger.error('Error al cerrar sesión:', error);
-      return { success: false, message: error?.message || 'Error desconocido' };
+      this.logger.error('Error al cerrar sesión:', error?.message);
+      return { success: false, message: error?.message || 'Error desconocido al cerrar sesión' };
     }
   }
 
   async reconnect(): Promise<{ success: boolean; message: string }> {
     try {
-      this.logger.log('🔄 Iniciando reconexión...');
+      this.logger.log('🔄 Iniciando reconexión manual...');
       this.cleanup();
       this.reconnectAttempts = 0;
       this.isConnecting = false;
+      this.isConnected = false;
+      this.qrCode = null; // Resetear QR para nueva sesión
+      
+      // Dar tiempo para que los recursos se liberen
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       await this.initializeWhatsApp();
       return { success: true, message: 'Reconexión iniciada' };
     } catch (error) {
+      this.logger.error('Error al reconectar:', error?.message);
       return { success: false, message: error?.message || 'Error al reconectar' };
     }
   }
