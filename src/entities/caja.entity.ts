@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { decimalTransformer } from '../common/transformers/decimal.transformer';
 
 export enum EstadoCaja {
   ABIERTA = 'ABIERTA',
@@ -16,16 +17,16 @@ export class Caja {
   @Column({ type: 'timestamp', nullable: true })
   fechaCierre: Date;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: decimalTransformer })
   montoInicial: number;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: decimalTransformer })
   totalVentas: number;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: decimalTransformer })
   totalGastos: number;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: decimalTransformer })
   montoFinal: number;
 
   @Column()
@@ -38,7 +39,7 @@ export class Caja {
   })
   estado: EstadoCaja;
 
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: decimalTransformer })
   diferencia: number;
 
   @Column({ type: 'jsonb', default: {} })
@@ -58,4 +59,3 @@ export class Caja {
     return this.montoInicial + this.totalVentas - this.totalGastos;
   }
 }
-

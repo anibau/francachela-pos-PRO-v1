@@ -410,16 +410,22 @@ export class VentasService {
     });
 
     const totalVentas = ventas.length;
-    const totalMonto = ventas.reduce((sum, venta) => sum + venta.total, 0);
+    // Asegurar que total sea un número usando parseFloat
+    const totalMonto = ventas.reduce((sum, venta) => {
+      const ventaTotal = typeof venta.total === 'string' ? parseFloat(venta.total) : venta.total;
+      return sum + (isNaN(ventaTotal) ? 0 : ventaTotal);
+    }, 0);
     const promedioVenta = totalVentas > 0 ? totalMonto / totalVentas : 0;
 
-    // Agrupar por método de pago
+    // Agrupar por método de pago - asegurar operaciones numéricas
     const ventasPorMetodo = ventas.reduce((acc, venta) => {
-      acc[venta.metodoPago] = (acc[venta.metodoPago] || 0) + venta.total;
+      const ventaTotal = typeof venta.total === 'string' ? parseFloat(venta.total) : venta.total;
+      const totalNumerico = isNaN(ventaTotal) ? 0 : ventaTotal;
+      acc[venta.metodoPago] = (acc[venta.metodoPago] || 0) + totalNumerico;
       return acc;
     }, {});
 
-    // Productos más vendidos
+    // Productos más vendidos - asegurar operaciones numéricas
     const productosVendidos = {};
     ventas.forEach(venta => {
       venta.listaProductos.forEach(item => {
@@ -430,8 +436,13 @@ export class VentasService {
             monto: 0,
           };
         }
-        productosVendidos[item.codigoBarra].cantidad += item.cantidad;
-        productosVendidos[item.codigoBarra].monto += item.subtotal;
+        
+        // Asegurar que cantidad y subtotal sean números
+        const cantidad = typeof item.cantidad === 'string' ? parseInt(item.cantidad) : item.cantidad;
+        const subtotal = typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : item.subtotal;
+        
+        productosVendidos[item.codigoBarra].cantidad += isNaN(cantidad) ? 0 : cantidad;
+        productosVendidos[item.codigoBarra].monto += isNaN(subtotal) ? 0 : subtotal;
       });
     });
 
