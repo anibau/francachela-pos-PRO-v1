@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { MetodoPago, CategoriaGasto } from '../common/enums';
+import { decimalTransformer } from '../common/transformers/decimal.transformer';
 
 @Entity('gastos')
 export class Gasto {
@@ -12,7 +13,7 @@ export class Gasto {
   @Column()
   descripcion: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, transformer: decimalTransformer })
   monto: number;
 
   @Column({
