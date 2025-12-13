@@ -64,10 +64,17 @@ export class ClientesService {
       order: { fechaRegistro: 'DESC' },
     });
 
+    // Agregar campos computados a cada cliente
+    const dataWithComputedFields = data.map(cliente => ({
+      ...cliente,
+      esCumpleañosHoy: cliente.esCumpleañosHoy,
+      edad: cliente.edad
+    }));
+
     const totalPages = Math.ceil(total / (limit || 10));
 
     return {
-      data,
+      data: dataWithComputedFields,
       total,
       page: page || 1,
       limit: limit || 10,
@@ -84,7 +91,13 @@ export class ClientesService {
     if (!cliente) {
       throw new NotFoundException('Cliente no encontrado');
     }
-    return cliente;
+    
+    // Agregar campos computados
+    return {
+      ...cliente,
+      esCumpleañosHoy: cliente.esCumpleañosHoy,
+      edad: cliente.edad
+    } as Cliente;
   }
 
   async findByDni(dni: string): Promise<Cliente> {
@@ -141,12 +154,19 @@ export class ClientesService {
     const month = today.getMonth() + 1;
     const day = today.getDate();
 
-    return this.clienteRepository
+    const clientes = await this.clienteRepository
       .createQueryBuilder('cliente')
       .where('cliente.activo = true')
       .andWhere('EXTRACT(MONTH FROM cliente.fechaNacimiento) = :month', { month })
       .andWhere('EXTRACT(DAY FROM cliente.fechaNacimiento) = :day', { day })
       .getMany();
+
+    // Agregar campos computados a cada cliente
+    return clientes.map(cliente => ({
+      ...cliente,
+      esCumpleañosHoy: cliente.esCumpleañosHoy,
+      edad: cliente.edad
+    }));
   }
 
   async findTopClientes(limit: number = 10): Promise<Cliente[]> {

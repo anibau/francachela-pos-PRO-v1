@@ -12,7 +12,8 @@ import {
   Validate,
   ValidationArguments,
   ValidatorConstraint,
-  ValidatorConstraintInterface
+  ValidatorConstraintInterface,
+  ArrayMaxSize
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -45,6 +46,27 @@ export class IsValidMontoRecibidoConstraint implements ValidatorConstraintInterf
 
   defaultMessage(args: ValidationArguments) {
     return 'El monto recibido no puede ser negativo';
+  }
+}
+
+/**
+ * Validador para métodos de pago múltiples
+ * Verifica que al menos uno de metodoPago o metodosPageo esté presente
+ */
+@ValidatorConstraint({ name: 'isValidPaymentMethods', async: false })
+export class IsValidPaymentMethodsConstraint implements ValidatorConstraintInterface {
+  validate(value: any, args: ValidationArguments) {
+    const object = args.object as CreateVentaDto;
+    
+    // Al menos uno debe estar presente
+    const hasLegacyMethod = object.metodoPago !== undefined && object.metodoPago !== null;
+    const hasMultiMethods = object.metodosPageo && object.metodosPageo.length > 0;
+    
+    return hasLegacyMethod || hasMultiMethods;
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    return 'Debe especificar al menos un método de pago (metodoPago o metodosPageo)';
   }
 }
 
@@ -82,9 +104,45 @@ export class ItemVentaDto {
 }
 
 /**
+ * DTO para método de pago individual en transacciones multi-pago
+ */
+export class MetodoPagoDto {
+  @ApiProperty({ 
+    description: 'Método de pago utilizado',
+    enum: MetodoPago,
+    example: MetodoPago.EFECTIVO,
+    enumName: 'MetodoPago'
+  })
+  @IsEnum(MetodoPago, { 
+    message: `Método de pago debe ser uno de: ${Object.values(MetodoPago).join(', ')}`
+  })
+  metodoPago: MetodoPago;
+
+  @ApiProperty({ 
+    description: 'Monto pagado con este método', 
+    example: 50.00,
+    minimum: 0.01
+  })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01, { message: 'El monto debe ser mayor a 0' })
+  monto: number;
+
+  @ApiPropertyOptional({ 
+    description: 'Referencia del pago (número de operación, voucher, etc.)',
+    example: 'TXN-123456',
+    maxLength: 100
+  })
+  @IsOptional()
+  @IsString({ message: 'La referencia debe ser texto' })
+  @MaxLength(100, { message: 'La referencia no puede superar 100 caracteres' })
+  referencia?: string;
+}
+
+/**
  * DTO para crear una nueva venta
  * Valida todos los campos según reglas de negocio
  */
+@Validate(IsValidPaymentMethodsConstraint)
 export class CreateVentaDto {
   @ApiPropertyOptional({ 
     description: 'ID del cliente (opcional para compras anónimas)', 
@@ -119,16 +177,32 @@ export class CreateVentaDto {
   @Validate(IsValidDescuentoConstraint)
   descuento?: number = 0;
 
-  @ApiProperty({ 
-    description: 'Método de pago utilizado',
+  @ApiPropertyOptional({ 
+    description: 'Método de pago utilizado (LEGACY - usar metodosPageo para múltiples métodos)',
     enum: MetodoPago,
     example: MetodoPago.EFECTIVO,
     enumName: 'MetodoPago'
   })
+  @IsOptional()
   @IsEnum(MetodoPago, { 
     message: `Método de pago debe ser uno de: ${Object.values(MetodoPago).join(', ')}`
   })
-  metodoPago: MetodoPago;
+  metodoPago?: MetodoPago;
+
+  @ApiPropertyOptional({ 
+    description: 'Múltiples métodos de pago para una transacción (NUEVO)',
+    type: [MetodoPagoDto],
+    example: [
+      { metodoPago: 'EFECTIVO', monto: 50.00 },
+      { metodoPago: 'YAPE', monto: 45.00, referencia: 'TXN-123456' }
+    ]
+  })
+  @IsOptional()
+  @IsArray({ message: 'metodosPageo debe ser un array' })
+  @ArrayMaxSize(5, { message: 'Máximo 5 métodos de pago por transacción' })
+  @ValidateNested({ each: true })
+  @Type(() => MetodoPagoDto)
+  metodosPageo?: MetodoPagoDto[];
 
   @ApiPropertyOptional({ 
     description: 'Comentario o notas sobre la venta',

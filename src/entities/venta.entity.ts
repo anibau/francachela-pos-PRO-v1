@@ -72,6 +72,18 @@ export class Venta {
   @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: decimalTransformer })
   vuelto: number;
 
+  @Column({ 
+    type: 'jsonb', 
+    default: [],
+    comment: 'Array de métodos de pago utilizados: [{ metodoPago, monto, referencia?, timestamp }]'
+  })
+  metodosPageoUsados: {
+    metodoPago: MetodoPago;
+    monto: number;
+    referencia?: string;
+    timestamp: Date;
+  }[];
+
   @CreateDateColumn()
   fechaCreacion: Date;
 

@@ -5,7 +5,9 @@ import { Venta } from '../../entities/venta.entity';
 import { EstadoVenta, MetodoPago, TipoCompra } from '../../common/enums';
 import { Cliente } from '../../entities/cliente.entity';
 import { CreateVentaDto } from './dto/create-venta.dto';
+import { SalesCutoffDto } from './dto/sales-cutoff.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { ProductosService } from '../productos/productos.service';
 import { ClientesService } from '../clientes/clientes.service';
@@ -106,7 +108,11 @@ export class VentasService {
       const ticketId = await this._generarTicketId(queryRunner);
       this.logger.debug(`✓ Ticket generado: ${ticketId}`);
 
-      // ===== 6. CREAR Y GUARDAR VENTA =====
+      // ===== 6. PROCESAR MÉTODOS DE PAGO =====
+      const metodosPageoUsados = this._procesarMetodosPago(createVentaDto, resumen.total);
+      this.logger.debug(`✓ Métodos de pago procesados: ${JSON.stringify(metodosPageoUsados)}`);
+
+      // ===== 7. CREAR Y GUARDAR VENTA =====
       const venta = this.ventaRepository.create({
         ...createVentaDto,
         cliente: cliente || undefined,
@@ -121,12 +127,15 @@ export class VentasService {
         ticketId,
         cajero,
         estado: EstadoVenta.COMPLETADO,
+        metodosPageoUsados,
+        // Mantener metodoPago para compatibilidad (primer método usado)
+        metodoPago: metodosPageoUsados[0]?.metodoPago || createVentaDto.metodoPago,
       });
 
       const ventaGuardada = await queryRunner.manager.save(venta);
       this.logger.log(`✓ Venta guardada en BD - ID: ${ventaGuardada.id}, Ticket: ${ticketId}`);
 
-      // ===== 7. DESCONTAR STOCK DE PRODUCTOS =====
+      // ===== 8. DESCONTAR STOCK DE PRODUCTOS =====
       for (const item of productosValidados) {
         try {
           await this.productosService.descontarStock(
@@ -143,7 +152,7 @@ export class VentasService {
         }
       }
 
-      // ===== 8. ACTUALIZAR PUNTOS DEL CLIENTE =====
+      // ===== 9. ACTUALIZAR PUNTOS DEL CLIENTE =====
       if (cliente) {
         // Usar puntos si es necesario
         if (createVentaDto.puntosUsados && createVentaDto.puntosUsados > 0) {
@@ -180,11 +189,11 @@ export class VentasService {
         }
       }
 
-      // ===== 9. COMMIT TRANSACCIÓN =====
+      // ===== 10. COMMIT TRANSACCIÓN =====
       await queryRunner.commitTransaction();
       this.logger.log(`✅ Transacción completada - Venta #${ventaGuardada.id} creada exitosamente`);
 
-      // ===== 10. ENVIAR NOTIFICACIÓN WHATSAPP (fuera de transacción) =====
+      // ===== 11. ENVIAR NOTIFICACIÓN WHATSAPP (fuera de transacción) =====
       if (cliente && cliente.telefono) {
         this._enviarNotificacionWhatsApp(cliente, ventaGuardada, resumen).catch(error => {
           this.logger.warn(`⚠️ Error enviando notificación WhatsApp: ${error.message}`);
@@ -246,6 +255,38 @@ export class VentasService {
       throw new NotFoundException('Venta no encontrada');
     }
     return venta;
+  }
+
+  /**
+   * Actualiza solo el comentario de una venta existente
+   */
+  async updateComentario(
+    id: number, 
+    comentario: string, 
+    usuarioActual: string
+  ): Promise<Venta> {
+    this.logger.log(`Actualizando comentario de venta ${id} por usuario ${usuarioActual}`);
+
+    // Verificar que la venta existe
+    const venta = await this.findById(id);
+
+    // Verificar que la venta no está anulada
+    if (venta.estado === EstadoVenta.ANULADO) {
+      throw new BadRequestException('No se puede modificar el comentario de una venta anulada');
+    }
+
+    // Actualizar solo el comentario
+    const comentarioAnterior = venta.comentario;
+    venta.comentario = comentario;
+
+    const ventaActualizada = await this.ventaRepository.save(venta);
+
+    // Log para auditoría
+    this.logger.log(
+      `Comentario actualizado en venta ${id}: "${comentarioAnterior}" → "${comentario}" por ${usuarioActual}`
+    );
+
+    return ventaActualizada;
   }
 
   async findByTicketId(ticketId: string): Promise<Venta> {
@@ -607,6 +648,191 @@ export class VentasService {
 
     const secuencial = (ventasDelDia + 1).toString().padStart(4, '0');
     return `${dateStr}-${secuencial}`;
+  }
+
+  /**
+   * Genera reporte de corte de ventas por rango de fechas
+   * Incluye métricas financieras, desglose por métodos de pago y productos más vendidos
+   */
+  async getSalesCutoffReport(dateRangeDto: DateRangeDto): Promise<SalesCutoffDto> {
+    this.logger.log(`📊 Generando corte de ventas desde ${dateRangeDto.fechaInicio} hasta ${dateRangeDto.fechaFin}`);
+
+    try {
+      // Obtener todas las ventas del período (incluyendo anuladas para estadísticas)
+      const ventas = await this.ventaRepository.find({
+        where: {
+          fecha: Between(dateRangeDto.fechaInicio, dateRangeDto.fechaFin)
+        },
+        relations: ['cliente'],
+        order: { fecha: 'ASC' }
+      });
+
+      // Filtrar ventas completadas para cálculos principales
+      const ventasCompletadas = ventas.filter(v => v.estado === EstadoVenta.COMPLETADO);
+      const ventasAnuladas = ventas.filter(v => v.estado === EstadoVenta.ANULADO);
+
+      // Métricas básicas
+      const totalVentas = ventasCompletadas.reduce((sum, v) => sum + v.total, 0);
+      const numeroTransacciones = ventasCompletadas.length;
+      const ticketPromedio = numeroTransacciones > 0 ? totalVentas / numeroTransacciones : 0;
+      const totalDescuentos = ventasCompletadas.reduce((sum, v) => sum + v.descuento, 0);
+      const puntosOtorgados = ventasCompletadas.reduce((sum, v) => sum + v.puntosOtorgados, 0);
+      const puntosCanjeados = ventasCompletadas.reduce((sum, v) => sum + v.puntosUsados, 0);
+
+      // Desglose por métodos de pago (considerando múltiples métodos)
+      const desgloseMetodosPago: { [key: string]: { cantidad: number; monto: number } } = {};
+      
+      ventasCompletadas.forEach(venta => {
+        if (venta.metodosPageoUsados && venta.metodosPageoUsados.length > 0) {
+          // Usar nuevos métodos de pago múltiples
+          venta.metodosPageoUsados.forEach(metodo => {
+            if (!desgloseMetodosPago[metodo.metodoPago]) {
+              desgloseMetodosPago[metodo.metodoPago] = { cantidad: 0, monto: 0 };
+            }
+            desgloseMetodosPago[metodo.metodoPago].cantidad += 1;
+            desgloseMetodosPago[metodo.metodoPago].monto += metodo.monto;
+          });
+        } else {
+          // Fallback a método de pago legacy
+          const metodo = venta.metodoPago;
+          if (!desgloseMetodosPago[metodo]) {
+            desgloseMetodosPago[metodo] = { cantidad: 0, monto: 0 };
+          }
+          desgloseMetodosPago[metodo].cantidad += 1;
+          desgloseMetodosPago[metodo].monto += venta.total;
+        }
+      });
+
+      // Desglose por tipo de compra
+      const desgloseTipoCompra: { [key: string]: { cantidad: number; monto: number } } = {};
+      ventasCompletadas.forEach(venta => {
+        const tipo = venta.tipoCompra || TipoCompra.LOCAL;
+        if (!desgloseTipoCompra[tipo]) {
+          desgloseTipoCompra[tipo] = { cantidad: 0, monto: 0 };
+        }
+        desgloseTipoCompra[tipo].cantidad += 1;
+        desgloseTipoCompra[tipo].monto += venta.total;
+      });
+
+      // Top productos más vendidos
+      const productosVendidos: { [key: number]: { descripcion: string; cantidad: number; monto: number } } = {};
+      
+      ventasCompletadas.forEach(venta => {
+        venta.listaProductos.forEach((item: any) => {
+          const productoId = item.productoId || item.id;
+          if (!productosVendidos[productoId]) {
+            productosVendidos[productoId] = {
+              descripcion: item.descripcion || item.productoDescripcion || 'Producto sin descripción',
+              cantidad: 0,
+              monto: 0
+            };
+          }
+          productosVendidos[productoId].cantidad += item.cantidad;
+          productosVendidos[productoId].monto += item.subtotal || (item.cantidad * item.precioUnitario);
+        });
+      });
+
+      const topProductos = Object.entries(productosVendidos)
+        .map(([productoId, data]) => ({
+          productoId: parseInt(productoId),
+          descripcion: data.descripcion,
+          cantidad: data.cantidad,
+          monto: data.monto
+        }))
+        .sort((a, b) => b.cantidad - a.cantidad)
+        .slice(0, 10);
+
+      // Ventas por día
+      const ventasPorDia: { [key: string]: { cantidad: number; monto: number } } = {};
+      
+      ventasCompletadas.forEach(venta => {
+        const fecha = venta.fecha.toISOString().split('T')[0]; // YYYY-MM-DD
+        if (!ventasPorDia[fecha]) {
+          ventasPorDia[fecha] = { cantidad: 0, monto: 0 };
+        }
+        ventasPorDia[fecha].cantidad += 1;
+        ventasPorDia[fecha].monto += venta.total;
+      });
+
+      const ventasPorDiaArray = Object.entries(ventasPorDia)
+        .map(([fecha, data]) => ({
+          fecha,
+          cantidad: data.cantidad,
+          monto: data.monto
+        }))
+        .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+      // Métricas de ventas anuladas
+      const ventasAnuladasCount = ventasAnuladas.length;
+      const montoVentasAnuladas = ventasAnuladas.reduce((sum, v) => sum + v.total, 0);
+
+      const resultado: SalesCutoffDto = {
+        fechaInicio: dateRangeDto.fechaInicio,
+        fechaFin: dateRangeDto.fechaFin,
+        totalVentas: Math.round(totalVentas * 100) / 100,
+        numeroTransacciones,
+        ticketPromedio: Math.round(ticketPromedio * 100) / 100,
+        totalDescuentos: Math.round(totalDescuentos * 100) / 100,
+        puntosOtorgados,
+        puntosCanjeados,
+        desgloseMetodosPago,
+        desgloseTipoCompra,
+        topProductos,
+        ventasPorDia: ventasPorDiaArray,
+        ventasAnuladas: ventasAnuladasCount,
+        montoVentasAnuladas: Math.round(montoVentasAnuladas * 100) / 100
+      };
+
+      this.logger.log(`✅ Corte generado: ${numeroTransacciones} ventas, S/ ${totalVentas.toFixed(2)} total`);
+      return resultado;
+
+    } catch (error) {
+      this.logger.error(`❌ Error generando corte de ventas: ${error.message}`);
+      throw new InternalServerErrorException(`Error generando reporte: ${error.message}`);
+    }
+  }
+
+  /**
+   * Procesa los métodos de pago de una venta
+   * Maneja tanto el formato legacy (metodoPago) como el nuevo (metodosPageo)
+   */
+  private _procesarMetodosPago(
+    createVentaDto: CreateVentaDto, 
+    totalVenta: number
+  ): { metodoPago: MetodoPago; monto: number; referencia?: string; timestamp: Date }[] {
+    const now = new Date();
+    
+    // Si se usa el nuevo formato de múltiples métodos de pago
+    if (createVentaDto.metodosPageo && createVentaDto.metodosPageo.length > 0) {
+      // Validar que la suma de montos sea igual al total
+      const sumaMontos = createVentaDto.metodosPageo.reduce((sum, metodo) => sum + metodo.monto, 0);
+      const diferencia = Math.abs(sumaMontos - totalVenta);
+      
+      if (diferencia > 0.01) { // Tolerancia de 1 centavo para errores de redondeo
+        throw new BadRequestException(
+          `La suma de métodos de pago (S/ ${sumaMontos.toFixed(2)}) debe ser igual al total (S/ ${totalVenta.toFixed(2)})`
+        );
+      }
+      
+      return createVentaDto.metodosPageo.map(metodo => ({
+        metodoPago: metodo.metodoPago,
+        monto: metodo.monto,
+        referencia: metodo.referencia,
+        timestamp: now
+      }));
+    }
+    
+    // Formato legacy: un solo método de pago
+    if (createVentaDto.metodoPago) {
+      return [{
+        metodoPago: createVentaDto.metodoPago,
+        monto: totalVenta,
+        timestamp: now
+      }];
+    }
+    
+    // Esto no debería pasar por la validación, pero por seguridad
+    throw new BadRequestException('Debe especificar al menos un método de pago');
   }
 
   /**
