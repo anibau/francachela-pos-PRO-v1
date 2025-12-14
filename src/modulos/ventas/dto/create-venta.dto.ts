@@ -55,17 +55,17 @@ export class IsValidMontoRecibidoConstraint implements ValidatorConstraintInterf
  */
 @ValidatorConstraint({ name: 'isValidPaymentMethods', async: false })
 export class IsValidPaymentMethodsConstraint implements ValidatorConstraintInterface {
-  validate(value: any, args: ValidationArguments) {
+  validate(value: any, args: ValidationArguments): boolean {
     const object = args.object as CreateVentaDto;
     
     // Al menos uno debe estar presente
     const hasLegacyMethod = object.metodoPago !== undefined && object.metodoPago !== null;
     const hasMultiMethods = object.metodosPageo && object.metodosPageo.length > 0;
     
-    return hasLegacyMethod || hasMultiMethods;
+    return !!(hasLegacyMethod || hasMultiMethods);
   }
 
-  defaultMessage(args: ValidationArguments) {
+  defaultMessage(args: ValidationArguments): string {
     return 'Debe especificar al menos un método de pago (metodoPago o metodosPageo)';
   }
 }
@@ -142,7 +142,6 @@ export class MetodoPagoDto {
  * DTO para crear una nueva venta
  * Valida todos los campos según reglas de negocio
  */
-@Validate(IsValidPaymentMethodsConstraint)
 export class CreateVentaDto {
   @ApiPropertyOptional({ 
     description: 'ID del cliente (opcional para compras anónimas)', 

@@ -179,7 +179,14 @@ export class WhatsappController {
         };
       }
 
-      const resultados = [];
+      const resultados: Array<{
+        clienteId: number;
+        nombre: string;
+        telefono: string;
+        edad: number | null;
+        enviado: boolean;
+        error: string | null;
+      }> = [];
       let mensajesEnviados = 0;
       let errores = 0;
 
@@ -191,7 +198,7 @@ export class WhatsappController {
           telefono: cliente.telefono,
           edad: cliente.edad,
           enviado: false,
-          error: null
+          error: null as string | null
         };
 
         try {

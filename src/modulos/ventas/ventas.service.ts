@@ -655,13 +655,22 @@ export class VentasService {
    * Incluye métricas financieras, desglose por métodos de pago y productos más vendidos
    */
   async getSalesCutoffReport(dateRangeDto: DateRangeDto): Promise<SalesCutoffDto> {
-    this.logger.log(`📊 Generando corte de ventas desde ${dateRangeDto.fechaInicio} hasta ${dateRangeDto.fechaFin}`);
+    // Convertir fechas string a Date
+    const fechaInicio = dateRangeDto.fechaInicio 
+      ? new Date(dateRangeDto.fechaInicio)
+      : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    
+    const fechaFin = dateRangeDto.fechaFin
+      ? new Date(dateRangeDto.fechaFin)
+      : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
+
+    this.logger.log(`📊 Generando corte de ventas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
 
     try {
       // Obtener todas las ventas del período (incluyendo anuladas para estadísticas)
       const ventas = await this.ventaRepository.find({
         where: {
-          fecha: Between(dateRangeDto.fechaInicio, dateRangeDto.fechaFin)
+          fecha: Between(fechaInicio, fechaFin)
         },
         relations: ['cliente'],
         order: { fecha: 'ASC' }
@@ -767,8 +776,8 @@ export class VentasService {
       const montoVentasAnuladas = ventasAnuladas.reduce((sum, v) => sum + v.total, 0);
 
       const resultado: SalesCutoffDto = {
-        fechaInicio: dateRangeDto.fechaInicio,
-        fechaFin: dateRangeDto.fechaFin,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
         totalVentas: Math.round(totalVentas * 100) / 100,
         numeroTransacciones,
         ticketPromedio: Math.round(ticketPromedio * 100) / 100,

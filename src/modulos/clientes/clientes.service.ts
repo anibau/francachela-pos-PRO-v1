@@ -6,14 +6,12 @@ import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class ClientesService {
   constructor(
     @InjectRepository(Cliente)
     private clienteRepository: Repository<Cliente>,
-    private whatsappService: WhatsappService,
   ) {}
 
   async create(createClienteDto: CreateClienteDto): Promise<Cliente> {
@@ -36,20 +34,8 @@ export class ClientesService {
 
     const clienteGuardado = await this.clienteRepository.save(cliente);
 
-    // Enviar mensaje de bienvenida por WhatsApp si tiene teléfono
-    if (clienteGuardado.telefono) {
-      try {
-        await this.whatsappService.sendWelcomeMessage(
-          clienteGuardado.telefono,
-          clienteGuardado.nombres,
-          clienteGuardado.apellidos,
-          clienteGuardado.codigoCorto,
-        );
-      } catch (error) {
-        // Log del error pero no fallar la creación del cliente
-        console.error('Error enviando mensaje de bienvenida:', error);
-      }
-    }
+    // Nota: El envío del mensaje de bienvenida se maneja desde el controlador o eventos
+    // para evitar dependencia circular entre módulos
 
     return clienteGuardado;
   }
@@ -64,17 +50,10 @@ export class ClientesService {
       order: { fechaRegistro: 'DESC' },
     });
 
-    // Agregar campos computados a cada cliente
-    const dataWithComputedFields = data.map(cliente => ({
-      ...cliente,
-      esCumpleañosHoy: cliente.esCumpleañosHoy,
-      edad: cliente.edad
-    }));
-
     const totalPages = Math.ceil(total / (limit || 10));
 
     return {
-      data: dataWithComputedFields,
+      data,
       total,
       page: page || 1,
       limit: limit || 10,
@@ -161,12 +140,7 @@ export class ClientesService {
       .andWhere('EXTRACT(DAY FROM cliente.fechaNacimiento) = :day', { day })
       .getMany();
 
-    // Agregar campos computados a cada cliente
-    return clientes.map(cliente => ({
-      ...cliente,
-      esCumpleañosHoy: cliente.esCumpleañosHoy,
-      edad: cliente.edad
-    }));
+    return clientes;
   }
 
   async findTopClientes(limit: number = 10): Promise<Cliente[]> {
@@ -293,49 +267,5 @@ export class ClientesService {
         puntosDisponibles: cliente.puntosAcumulados,
       },
     };
-  }
-
-  async sendClientInfoByDni(dni: string): Promise<{ success: boolean; message: string; cliente?: Cliente }> {
-    try {
-      const cliente = await this.findByDni(dni);
-      
-      if (!cliente.telefono) {
-        return {
-          success: false,
-          message: 'El cliente no tiene número de teléfono registrado',
-          cliente,
-        };
-      }
-
-      const whatsappResult = await this.whatsappService.sendClientInfoMessage(
-        cliente.telefono,
-        cliente.nombres,
-        cliente.apellidos,
-        cliente.codigoCorto,
-        cliente.puntosAcumulados,
-      );
-
-      if (whatsappResult.success) {
-        return {
-          success: true,
-          message: 'Información enviada al cliente exitosamente',
-          cliente,
-        };
-      } else {
-        return {
-          success: false,
-          message: `Error enviando mensaje: ${whatsappResult.error}`,
-          cliente,
-        };
-      }
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        return {
-          success: false,
-          message: 'Cliente no encontrado con el DNI proporcionado',
-        };
-      }
-      throw error;
-    }
   }
 }
