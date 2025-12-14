@@ -39,8 +39,8 @@ export class PromocionesController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todas las promociones' })
   @ApiResponse({ status: 200, description: 'Lista de promociones obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.promocionesService.findAll(paginationDto);
+  findAll() {
+    return this.promocionesService.findAll();
   }
 
   @Get('activas')

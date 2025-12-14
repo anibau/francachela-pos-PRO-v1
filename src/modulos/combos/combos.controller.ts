@@ -40,8 +40,8 @@ export class CombosController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los combos' })
   @ApiResponse({ status: 200, description: 'Lista de combos obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.combosService.findAll(paginationDto);
+  findAll() {
+    return this.combosService.findAll();
   }
 
   @Get('activos')

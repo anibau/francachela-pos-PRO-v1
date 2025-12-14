@@ -58,8 +58,8 @@ export class CajaController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener historial de cajas' })
   @ApiResponse({ status: 200, description: 'Historial de cajas obtenido exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.cajaService.findAll(paginationDto);
+  findAll() {
+    return this.cajaService.findAll();
   }
 
   @Get('actual')

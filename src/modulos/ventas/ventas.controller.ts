@@ -79,13 +79,11 @@ export class VentasController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ 
     summary: 'Obtener todas las ventas',
-    description: 'Retorna un listado paginado de todas las ventas del sistema'
+    description: 'Retorna un listado de todas las ventas del sistema'
   })
   @ApiResponse({ status: 200, description: 'Lista de ventas obtenida exitosamente' })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.ventasService.findAll(paginationDto);
+  findAll() {
+    return this.ventasService.findAll();
   }
 
   /**

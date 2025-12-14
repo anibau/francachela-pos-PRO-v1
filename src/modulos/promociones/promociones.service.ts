@@ -20,26 +20,10 @@ export class PromocionesService {
     return this.promocionRepository.save(promocion);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Promocion>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.promocionRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<Promocion[]> {
+    return this.promocionRepository.find({
       order: { fechaCreacion: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Promocion> {

@@ -24,26 +24,10 @@ export class GastosService {
     return this.gastoRepository.save(gasto);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Gasto>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.gastoRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<Gasto[]> {
+    return this.gastoRepository.find({
       order: { fecha: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Gasto> {

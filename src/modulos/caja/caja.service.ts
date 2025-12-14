@@ -65,26 +65,10 @@ export class CajaService {
     return this.findById(id);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Caja>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.cajaRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<Caja[]> {
+    return this.cajaRepository.find({
       order: { fechaApertura: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Caja> {

@@ -78,26 +78,10 @@ export class MovimientoInventarioService {
     return this.movimientoRepository.save(movimiento);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<MovimientoInventario>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.movimientoRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<MovimientoInventario[]> {
+    return this.movimientoRepository.find({
       order: { hora: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<MovimientoInventario> {

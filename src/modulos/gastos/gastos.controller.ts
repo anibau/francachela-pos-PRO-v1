@@ -41,8 +41,8 @@ export class GastosController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los gastos' })
   @ApiResponse({ status: 200, description: 'Lista de gastos obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.gastosService.findAll(paginationDto);
+  findAll() {
+    return this.gastosService.findAll();
   }
 
   @Get('hoy')

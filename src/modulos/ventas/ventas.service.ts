@@ -223,27 +223,11 @@ export class VentasService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Venta>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.ventaRepository.findAndCount({
+  async findAll(): Promise<Venta[]> {
+    return this.ventaRepository.find({
       relations: ['cliente'],
-      skip,
-      take: limit,
       order: { fecha: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Venta> {

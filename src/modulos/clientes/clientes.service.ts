@@ -40,27 +40,11 @@ export class ClientesService {
     return clienteGuardado;
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Cliente>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.clienteRepository.findAndCount({
+  async findAll(): Promise<Cliente[]> {
+    return this.clienteRepository.find({
       where: { activo: true },
-      skip,
-      take: limit,
       order: { fechaRegistro: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Cliente> {

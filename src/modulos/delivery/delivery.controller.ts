@@ -40,8 +40,8 @@ export class DeliveryController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los deliveries' })
   @ApiResponse({ status: 200, description: 'Lista de deliveries obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.deliveryService.findAll(paginationDto);
+  findAll() {
+    return this.deliveryService.findAll();
   }
 
   @Get('hoy')

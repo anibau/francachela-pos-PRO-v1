@@ -37,8 +37,8 @@ export class MovimientoInventarioController {
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los movimientos de inventario' })
   @ApiResponse({ status: 200, description: 'Lista de movimientos obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.movimientoInventarioService.findAll(paginationDto);
+  findAll() {
+    return this.movimientoInventarioService.findAll();
   }
 
   @Get('hoy')

@@ -42,8 +42,8 @@ export class ProductosController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Obtener todos los productos' })
   @ApiResponse({ status: 200, description: 'Lista de productos obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.productosService.findAll(paginationDto);
+  findAll() {
+    return this.productosService.findAll();
   }
 
   @Get('search')
