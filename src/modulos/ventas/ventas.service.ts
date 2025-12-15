@@ -450,62 +450,114 @@ export class VentasService {
   }
 
   async getEstadisticasVentas(fechaInicio: Date, fechaFin: Date): Promise<any> {
-    const ventas = await this.ventaRepository.find({
-      where: {
-        fecha: Between(fechaInicio, fechaFin),
-        estado: EstadoVenta.COMPLETADO,
-      },
-      relations: ['cliente'],
-    });
+    // ===== CONSULTA OPTIMIZADA: ESTADÍSTICAS BÁSICAS =====
+    const estadisticasBasicas = await this.ventaRepository
+      .createQueryBuilder('venta')
+      .select([
+        'COUNT(venta.id) as totalVentas',
+        'COALESCE(SUM(venta.total), 0) as totalMonto',
+        'COALESCE(AVG(venta.total), 0) as promedioVenta',
+        'COALESCE(SUM(venta.descuento), 0) as totalDescuentos',
+        'COALESCE(SUM(venta.recargoExtra), 0) as totalRecargos',
+        'COALESCE(SUM(venta.puntosOtorgados), 0) as totalPuntosOtorgados',
+        'COALESCE(SUM(venta.puntosUsados), 0) as totalPuntosUsados'
+      ])
+      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+      .getRawOne();
 
-    const totalVentas = ventas.length;
-    // Asegurar que total sea un número usando parseFloat
-    const totalMonto = ventas.reduce((sum, venta) => {
-      const ventaTotal = typeof venta.total === 'string' ? parseFloat(venta.total) : venta.total;
-      return sum + (isNaN(ventaTotal) ? 0 : ventaTotal);
-    }, 0);
-    const promedioVenta = totalVentas > 0 ? totalMonto / totalVentas : 0;
+    // ===== CONSULTA OPTIMIZADA: DESGLOSE POR MÉTODOS DE PAGO =====
+    const ventasPorMetodo = await this.ventaPagoRepository
+      .createQueryBuilder('pago')
+      .innerJoin('pago.venta', 'venta')
+      .select([
+        'pago.metodoPago as metodoPago',
+        'COUNT(DISTINCT venta.id) as cantidadVentas',
+        'COALESCE(SUM(pago.monto), 0) as montoTotal'
+      ])
+      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+      .andWhere('pago.estado = :estadoPago', { estadoPago: 'COMPLETADO' })
+      .groupBy('pago.metodoPago')
+      .orderBy('montoTotal', 'DESC')
+      .getRawMany();
 
-    // Agrupar por método de pago - asegurar operaciones numéricas
-    const ventasPorMetodo = ventas.reduce((acc, venta) => {
-      const ventaTotal = typeof venta.total === 'string' ? parseFloat(venta.total) : venta.total;
-      const totalNumerico = isNaN(ventaTotal) ? 0 : ventaTotal;
-      acc[venta.metodoPago] = (acc[venta.metodoPago] || 0) + totalNumerico;
+    // ===== CONSULTA OPTIMIZADA: TOP PRODUCTOS VENDIDOS =====
+    const topProductos = await this.ventaRepository
+      .createQueryBuilder('venta')
+      .select([
+        "jsonb_array_elements(venta.listaProductos)->>'codigoBarra' as codigoBarra",
+        "jsonb_array_elements(venta.listaProductos)->>'descripcion' as descripcion",
+        'SUM((jsonb_array_elements(venta.listaProductos)->>\'cantidad\')::integer) as cantidad',
+        'SUM((jsonb_array_elements(venta.listaProductos)->>\'subtotal\')::decimal) as monto'
+      ])
+      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+      .groupBy("jsonb_array_elements(venta.listaProductos)->>'codigoBarra'")
+      .addGroupBy("jsonb_array_elements(venta.listaProductos)->>'descripcion'")
+      .orderBy('cantidad', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    // ===== CONSULTA OPTIMIZADA: VENTAS POR TIPO DE COMPRA =====
+    const ventasPorTipo = await this.ventaRepository
+      .createQueryBuilder('venta')
+      .select([
+        'COALESCE(venta.tipoCompra, \'LOCAL\') as tipoCompra',
+        'COUNT(venta.id) as cantidadVentas',
+        'COALESCE(SUM(venta.total), 0) as montoTotal'
+      ])
+      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+      .groupBy('venta.tipoCompra')
+      .orderBy('montoTotal', 'DESC')
+      .getRawMany();
+
+    // ===== FORMATEAR RESULTADOS =====
+    const ventasPorMetodoFormateado = ventasPorMetodo.reduce((acc, item) => {
+      acc[item.metodoPago] = {
+        cantidadVentas: parseInt(item.cantidadVentas),
+        montoTotal: parseFloat(item.montoTotal)
+      };
       return acc;
     }, {});
 
-    // Productos más vendidos - asegurar operaciones numéricas
-    const productosVendidos = {};
-    ventas.forEach(venta => {
-      venta.listaProductos.forEach(item => {
-        if (!productosVendidos[item.codigoBarra]) {
-          productosVendidos[item.codigoBarra] = {
-            descripcion: item.descripcion,
-            cantidad: 0,
-            monto: 0,
-          };
-        }
-        
-        // Asegurar que cantidad y subtotal sean números
-        const cantidad = typeof item.cantidad === 'string' ? parseInt(item.cantidad) : item.cantidad;
-        const subtotal = typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : item.subtotal;
-        
-        productosVendidos[item.codigoBarra].cantidad += isNaN(cantidad) ? 0 : cantidad;
-        productosVendidos[item.codigoBarra].monto += isNaN(subtotal) ? 0 : subtotal;
-      });
-    });
+    const ventasPorTipoFormateado = ventasPorTipo.reduce((acc, item) => {
+      acc[item.tipoCompra] = {
+        cantidadVentas: parseInt(item.cantidadVentas),
+        montoTotal: parseFloat(item.montoTotal)
+      };
+      return acc;
+    }, {});
 
-    const topProductos = Object.entries(productosVendidos)
-      .map(([codigo, data]: [string, any]) => ({ codigoBarra: codigo, ...data }))
-      .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 10);
+    const topProductosFormateado = topProductos.map(item => ({
+      codigoBarra: item.codigoBarra,
+      descripcion: item.descripcion,
+      cantidad: parseInt(item.cantidad),
+      monto: parseFloat(item.monto)
+    }));
+
+    this.logger.debug(`✓ Estadísticas calculadas: ${estadisticasBasicas.totalVentas} ventas, ${ventasPorMetodo.length} métodos de pago`);
 
     return {
-      totalVentas,
-      totalMonto,
-      promedioVenta,
-      ventasPorMetodo,
-      topProductos,
+      // Estadísticas básicas
+      totalVentas: parseInt(estadisticasBasicas.totalVentas),
+      totalMonto: parseFloat(estadisticasBasicas.totalMonto),
+      promedioVenta: parseFloat(estadisticasBasicas.promedioVenta),
+      totalDescuentos: parseFloat(estadisticasBasicas.totalDescuentos),
+      totalRecargos: parseFloat(estadisticasBasicas.totalRecargos),
+      totalPuntosOtorgados: parseInt(estadisticasBasicas.totalPuntosOtorgados),
+      totalPuntosUsados: parseInt(estadisticasBasicas.totalPuntosUsados),
+      
+      // Desgloses
+      ventasPorMetodo: ventasPorMetodoFormateado,
+      ventasPorTipo: ventasPorTipoFormateado,
+      topProductos: topProductosFormateado,
+      
+      // Metadatos
+      fechaInicio,
+      fechaFin,
+      fechaGeneracion: new Date()
     };
   }
 
@@ -698,28 +750,43 @@ export class VentasService {
       const puntosOtorgados = ventasCompletadas.reduce((sum, v) => sum + v.puntosOtorgados, 0);
       const puntosCanjeados = ventasCompletadas.reduce((sum, v) => sum + v.puntosUsados, 0);
 
-      // Desglose por métodos de pago (considerando múltiples métodos)
+      // ===== CONSULTA OPTIMIZADA: DESGLOSE POR MÉTODOS DE PAGO =====
+      const desgloseMetodosPagoRaw = await this.ventaPagoRepository
+        .createQueryBuilder('pago')
+        .innerJoin('pago.venta', 'venta')
+        .select([
+          'pago.metodoPago as metodoPago',
+          'COUNT(DISTINCT venta.id) as cantidad',
+          'COALESCE(SUM(pago.monto), 0) as monto'
+        ])
+        .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+        .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+        .andWhere('pago.estado = :estadoPago', { estadoPago: 'COMPLETADO' })
+        .groupBy('pago.metodoPago')
+        .orderBy('monto', 'DESC')
+        .getRawMany();
+
+      // Formatear desglose de métodos de pago
       const desgloseMetodosPago: { [key: string]: { cantidad: number; monto: number } } = {};
+      desgloseMetodosPagoRaw.forEach(item => {
+        desgloseMetodosPago[item.metodoPago] = {
+          cantidad: parseInt(item.cantidad),
+          monto: parseFloat(item.monto)
+        };
+      });
+
+      // Fallback para ventas sin pagos normalizados (compatibilidad temporal)
+      const ventasSinPagosNormalizados = ventasCompletadas.filter(venta => 
+        !desgloseMetodosPagoRaw.some(pago => pago.metodoPago === venta.metodoPago)
+      );
       
-      ventasCompletadas.forEach(venta => {
-        if (venta.metodosPageoUsados && venta.metodosPageoUsados.length > 0) {
-          // Usar nuevos métodos de pago múltiples
-          venta.metodosPageoUsados.forEach(metodo => {
-            if (!desgloseMetodosPago[metodo.metodoPago]) {
-              desgloseMetodosPago[metodo.metodoPago] = { cantidad: 0, monto: 0 };
-            }
-            desgloseMetodosPago[metodo.metodoPago].cantidad += 1;
-            desgloseMetodosPago[metodo.metodoPago].monto += metodo.monto;
-          });
-        } else {
-          // Fallback a método de pago legacy
-          const metodo = venta.metodoPago;
-          if (!desgloseMetodosPago[metodo]) {
-            desgloseMetodosPago[metodo] = { cantidad: 0, monto: 0 };
-          }
-          desgloseMetodosPago[metodo].cantidad += 1;
-          desgloseMetodosPago[metodo].monto += venta.total;
+      ventasSinPagosNormalizados.forEach(venta => {
+        const metodo = venta.metodoPago;
+        if (!desgloseMetodosPago[metodo]) {
+          desgloseMetodosPago[metodo] = { cantidad: 0, monto: 0 };
         }
+        desgloseMetodosPago[metodo].cantidad += 1;
+        desgloseMetodosPago[metodo].monto += venta.total;
       });
 
       // Desglose por tipo de compra
