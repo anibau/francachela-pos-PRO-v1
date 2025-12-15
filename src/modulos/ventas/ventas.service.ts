@@ -92,6 +92,7 @@ export class VentasService {
       const resumen = this._calcularResumenVenta(
         productosValidados,
         createVentaDto.descuento || 0,
+        createVentaDto.recargoExtra || 0,
         createVentaDto.puntosUsados || 0,
         cliente
       );
@@ -113,9 +114,14 @@ export class VentasService {
       const ticketId = await this._generarTicketId(queryRunner);
       this.logger.debug(`✓ Ticket generado: ${ticketId}`);
 
-      // ===== 6. PROCESAR MÉTODOS DE PAGO =====
-      const metodosPageoUsados = this._procesarMetodosPago(createVentaDto, resumen.total);
-      this.logger.debug(`✓ Métodos de pago procesados: ${JSON.stringify(metodosPageoUsados)}`);
+      // ===== 6. PROCESAR MÉTODOS DE PAGO NORMALIZADOS =====
+      const pagosNormalizados = await this._procesarPagosNormalizados(
+        createVentaDto, 
+        resumen.total, 
+        cajero, 
+        queryRunner
+      );
+      this.logger.debug(`✓ Pagos normalizados procesados: ${pagosNormalizados.length} métodos`);
 
       // ===== 7. CREAR Y GUARDAR VENTA =====
       const venta = this.ventaRepository.create({
@@ -124,6 +130,7 @@ export class VentasService {
         listaProductos: productosValidados,
         subTotal: resumen.subTotal,
         descuento: resumen.descuentoTotal,
+        recargoExtra: createVentaDto.recargoExtra || 0,
         total: resumen.total,
         puntosOtorgados: resumen.puntosOtorgados,
         puntosUsados: createVentaDto.puntosUsados || 0,
@@ -132,15 +139,27 @@ export class VentasService {
         ticketId,
         cajero,
         estado: EstadoVenta.COMPLETADO,
-        metodosPageoUsados,
+        estadoVenta: 'COMPLETADO',
+        // DEPRECATED: Mantener para backward compatibility temporal
+        metodosPageoUsados: this._procesarMetodosPago(createVentaDto, resumen.total),
         // Mantener metodoPago para compatibilidad (primer método usado)
-        metodoPago: metodosPageoUsados[0]?.metodoPago || createVentaDto.metodoPago,
+        metodoPago: pagosNormalizados[0]?.metodoPago || createVentaDto.metodoPago,
       });
 
       const ventaGuardada = await queryRunner.manager.save(venta);
-      this.logger.log(`✓ Venta guardada en BD - ID: ${ventaGuardada.id}, Ticket: ${ticketId}`);
+      
+      // ===== 8. GUARDAR PAGOS NORMALIZADOS =====
+      for (const pagoData of pagosNormalizados) {
+        const ventaPago = this.ventaPagoRepository.create({
+          ...pagoData,
+          ventaId: ventaGuardada.id,
+        });
+        await queryRunner.manager.save(ventaPago);
+      }
+      
+      this.logger.log(`✓ Venta y ${pagosNormalizados.length} pagos guardados - ID: ${ventaGuardada.id}, Ticket: ${ticketId}`);
 
-      // ===== 8. DESCONTAR STOCK DE PRODUCTOS =====
+      // ===== 9. DESCONTAR STOCK DE PRODUCTOS =====
       for (const item of productosValidados) {
         try {
           await this.productosService.descontarStock(
@@ -157,7 +176,7 @@ export class VentasService {
         }
       }
 
-      // ===== 9. ACTUALIZAR PUNTOS DEL CLIENTE =====
+      // ===== 10. ACTUALIZAR PUNTOS DEL CLIENTE =====
       if (cliente) {
         // Usar puntos si es necesario
         if (createVentaDto.puntosUsados && createVentaDto.puntosUsados > 0) {
@@ -194,11 +213,11 @@ export class VentasService {
         }
       }
 
-      // ===== 10. COMMIT TRANSACCIÓN =====
+      // ===== 11. COMMIT TRANSACCIÓN =====
       await queryRunner.commitTransaction();
       this.logger.log(`✅ Transacción completada - Venta #${ventaGuardada.id} creada exitosamente`);
 
-      // ===== 11. ENVIAR NOTIFICACIÓN WHATSAPP (fuera de transacción) =====
+      // ===== 12. ENVIAR NOTIFICACIÓN WHATSAPP (fuera de transacción) =====
       if (cliente && cliente.telefono) {
         this._enviarNotificacionWhatsApp(cliente, ventaGuardada, resumen).catch(error => {
           this.logger.warn(`⚠️ Error enviando notificación WhatsApp: ${error.message}`);
@@ -579,6 +598,7 @@ export class VentasService {
   private _calcularResumenVenta(
     productosValidados: ProductoValidado[],
     descuentoManual: number = 0,
+    recargoExtra: number = 0,
     puntosUsados: number = 0,
     cliente: Cliente | null
   ): ResumenVenta {
@@ -593,13 +613,13 @@ export class VentasService {
     // Descuento total
     const descuentoTotal = Math.round((descuentoManual + descuentoPorPuntos) * 100) / 100;
 
-    // Total
-    const total = Math.max(0, Math.round((subTotal - descuentoTotal) * 100) / 100);
+    // Total con recargo extra
+    const total = Math.max(0, Math.round((subTotal - descuentoTotal + recargoExtra) * 100) / 100);
 
     // Validar que total no sea negativo
     if (total < 0) {
       throw new BadRequestException(
-        `Descuento (S/ ${descuentoTotal.toFixed(2)}) no puede ser mayor al subtotal (S/ ${subTotal.toFixed(2)})`
+        `Descuento (S/ ${descuentoTotal.toFixed(2)}) no puede ser mayor al subtotal + recargo (S/ ${(subTotal + recargoExtra).toFixed(2)})`
       );
     }
 
@@ -613,6 +633,7 @@ export class VentasService {
       subTotal,
       descuentoPorPuntos,
       descuentoTotal,
+      recargoExtra,
       total,
       puntosOtorgados,
       vuelto,
@@ -831,6 +852,61 @@ export class VentasService {
     
     // Esto no debería pasar por la validación, pero por seguridad
     throw new BadRequestException('Debe especificar al menos un método de pago');
+  }
+
+  /**
+   * Procesa métodos de pago normalizados para la nueva arquitectura
+   * Convierte los datos del DTO en registros para la tabla venta_pagos
+   */
+  private async _procesarPagosNormalizados(
+    createVentaDto: CreateVentaDto,
+    totalVenta: number,
+    cajero: string,
+    queryRunner: any
+  ): Promise<CreateVentaPagoDto[]> {
+    const pagosNormalizados: CreateVentaPagoDto[] = [];
+    let secuencia = 1;
+
+    // Si hay métodos de pago múltiples, procesarlos
+    if (createVentaDto.metodosPageoUsados && createVentaDto.metodosPageoUsados.length > 0) {
+      for (const metodo of createVentaDto.metodosPageoUsados) {
+        pagosNormalizados.push({
+          metodoPago: metodo.metodoPago,
+          monto: metodo.monto,
+          referencia: metodo.referencia || null,
+          estado: 'COMPLETADO',
+          notas: metodo.notas || null,
+          fechaRegistro: new Date(),
+          registradoPor: cajero,
+          secuencia: secuencia++,
+        });
+      }
+    } else {
+      // Fallback: usar método de pago único
+      pagosNormalizados.push({
+        metodoPago: createVentaDto.metodoPago,
+        monto: totalVenta,
+        referencia: null,
+        estado: 'COMPLETADO',
+        notas: null,
+        fechaRegistro: new Date(),
+        registradoPor: cajero,
+        secuencia: 1,
+      });
+    }
+
+    // Validar que la suma de pagos coincida con el total
+    const sumaPagos = pagosNormalizados.reduce((sum, pago) => sum + pago.monto, 0);
+    const diferencia = Math.abs(sumaPagos - totalVenta);
+    
+    if (diferencia > 0.01) { // Tolerancia de 1 centavo para redondeo
+      throw new BadRequestException(
+        `La suma de pagos (S/ ${sumaPagos.toFixed(2)}) no coincide con el total de la venta (S/ ${totalVenta.toFixed(2)})`
+      );
+    }
+
+    this.logger.debug(`✓ Pagos validados: ${pagosNormalizados.length} métodos, suma: S/ ${sumaPagos.toFixed(2)}`);
+    return pagosNormalizados;
   }
 
   /**
