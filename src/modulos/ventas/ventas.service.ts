@@ -2,9 +2,11 @@ import { Injectable, NotFoundException, BadRequestException, Logger, InternalSer
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, DataSource } from 'typeorm';
 import { Venta } from '../../entities/venta.entity';
+import { VentaPago } from '../../entities/venta-pago.entity';
 import { EstadoVenta, MetodoPago, TipoCompra } from '../../common/enums';
 import { Cliente } from '../../entities/cliente.entity';
 import { CreateVentaDto } from './dto/create-venta.dto';
+import { CreateVentaPagoDto } from './dto/venta-pago.dto';
 import { SalesCutoffDto } from './dto/sales-cutoff.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { DateRangeDto } from '../../common/dto/date-range.dto';
@@ -33,6 +35,7 @@ interface ResumenVenta {
   subTotal: number;
   descuentoPorPuntos: number;
   descuentoTotal: number;
+  recargoExtra: number;
   total: number;
   puntosOtorgados: number;
   vuelto: number;
@@ -49,6 +52,8 @@ export class VentasService {
   constructor(
     @InjectRepository(Venta)
     private ventaRepository: Repository<Venta>,
+    @InjectRepository(VentaPago)
+    private ventaPagoRepository: Repository<VentaPago>,
     @InjectRepository(Cliente)
     private clienteRepository: Repository<Cliente>,
     private productosService: ProductosService,

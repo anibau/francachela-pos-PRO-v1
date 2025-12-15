@@ -35,6 +35,21 @@ export class IsValidDescuentoConstraint implements ValidatorConstraintInterface 
 }
 
 /**
+ * Validador personalizado para asegurar que el recargoExtra no sea negativo
+ */
+@ValidatorConstraint({ name: 'isValidRecargoExtra', async: false })
+export class IsValidRecargoExtraConstraint implements ValidatorConstraintInterface {
+  validate(value: number | undefined) {
+    if (value === undefined || value === null) return true;
+    return value >= 0;
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    return 'El recargo extra no puede ser negativo';
+  }
+}
+
+/**
  * Validador para montos recibidos
  */
 @ValidatorConstraint({ name: 'isValidMontoRecibido', async: false })
@@ -175,6 +190,18 @@ export class CreateVentaDto {
   @Min(0, { message: 'El descuento no puede ser negativo' })
   @Validate(IsValidDescuentoConstraint)
   descuento?: number = 0;
+
+  @ApiPropertyOptional({ 
+    description: 'Recargo extra aplicado a la venta (opuesto al descuento) - ej: costo de delivery, comisión por método de pago', 
+    example: 3.50,
+    default: 0,
+    minimum: 0
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0, { message: 'El recargo extra no puede ser negativo' })
+  @Validate(IsValidRecargoExtraConstraint)
+  recargoExtra?: number = 0;
 
   @ApiPropertyOptional({ 
     description: 'Método de pago utilizado (LEGACY - usar metodosPageo para múltiples métodos)',
