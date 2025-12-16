@@ -771,19 +771,7 @@ export class VentasService {
         };
       });
 
-      // Fallback para ventas sin pagos normalizados (compatibilidad temporal)
-      const ventasSinPagosNormalizados = ventasCompletadas.filter(venta => 
-        !desgloseMetodosPagoRaw.some(pago => pago.metodoPago === venta.metodoPago)
-      );
-      
-      ventasSinPagosNormalizados.forEach(venta => {
-        const metodo = venta.metodoPago;
-        if (!desgloseMetodosPago[metodo]) {
-          desgloseMetodosPago[metodo] = { cantidad: 0, monto: 0 };
-        }
-        desgloseMetodosPago[metodo].cantidad += 1;
-        desgloseMetodosPago[metodo].monto += venta.total;
-      });
+      // Nota: Código de compatibilidad temporal eliminado - ahora solo usa venta_pagos
 
       // Desglose por tipo de compra
       const desgloseTipoCompra: { [key: string]: { cantidad: number; monto: number } } = {};

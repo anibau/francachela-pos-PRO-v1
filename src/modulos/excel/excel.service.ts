@@ -70,14 +70,14 @@ export class ExcelService {
 
     const ventas = await this.ventaRepository.find({
       where: whereCondition,
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
       order: { fecha: 'DESC' }
     });
 
     // Headers
     const headers = [
       'ID', 'Fecha', 'Cliente', 'DNI Cliente', 'Subtotal', 'Descuento', 
-      'Total', 'Método Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
+      'Total', 'Métodos Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
       'Puntos Usados', 'Tipo Compra', 'Comentario'
     ];
 
@@ -98,6 +98,11 @@ export class ExcelService {
 
     // Datos
     ventas.forEach(venta => {
+      // Formatear métodos de pago desde la relación pagos
+      const metodosPago = venta.pagos && venta.pagos.length > 0 
+        ? venta.pagos.map(pago => `${pago.metodoPago}: S/ ${pago.monto.toFixed(2)}`).join(', ')
+        : 'Sin pagos registrados';
+
       const row = [
         venta.id,
         venta.fecha.toLocaleDateString(),
@@ -106,7 +111,7 @@ export class ExcelService {
         venta.subTotal,
         venta.descuento,
         venta.total,
-        venta.metodoPago,
+        metodosPago,
         venta.cajero,
         venta.estado,
         venta.puntosOtorgados,
