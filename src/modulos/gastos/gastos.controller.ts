@@ -20,6 +20,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { CategoriaGasto } from '../../common/enums';
 
 @ApiTags('Gastos')
@@ -41,8 +42,8 @@ export class GastosController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los gastos' })
   @ApiResponse({ status: 200, description: 'Lista de gastos obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.gastosService.findAll(paginationDto);
+  findAll() {
+    return this.gastosService.findAll();
   }
 
   @Get('hoy')
@@ -64,16 +65,10 @@ export class GastosController {
   @Get('estadisticas')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obtener estadísticas de gastos por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
-  getEstadisticas(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.gastosService.getEstadisticasGastos(inicio, fin);
+  getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
+    const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+    return this.gastosService.getEstadisticasGastos(fechaInicio, fechaFin);
   }
 
   @Get('search')

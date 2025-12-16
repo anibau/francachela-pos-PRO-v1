@@ -38,6 +38,41 @@ export class Cliente {
   @Column({ nullable: true })
   direccion: string;
 
+  /**
+   * Getter que calcula si hoy es el cumpleaños del cliente
+   */
+  get esCumpleañosHoy(): boolean {
+    if (!this.fechaNacimiento) return false;
+    
+    const hoy = new Date();
+    const cumple = new Date(this.fechaNacimiento);
+    
+    return (
+      hoy.getMonth() === cumple.getMonth() && 
+      hoy.getDate() === cumple.getDate()
+    );
+  }
+
+  /**
+   * Getter que calcula la edad actual del cliente
+   */
+  get edad(): number | null {
+    if (!this.fechaNacimiento) return null;
+    
+    const hoy = new Date();
+    const cumple = new Date(this.fechaNacimiento);
+    
+    let edad = hoy.getFullYear() - cumple.getFullYear();
+    const mesActual = hoy.getMonth();
+    const mesCumple = cumple.getMonth();
+    
+    if (mesActual < mesCumple || (mesActual === mesCumple && hoy.getDate() < cumple.getDate())) {
+      edad--;
+    }
+    
+    return edad;
+  }
+
   @Column({ default: true })
   activo: boolean;
 
@@ -52,4 +87,3 @@ export class Cliente {
     return `${this.nombres} ${this.apellidos}`;
   }
 }
-

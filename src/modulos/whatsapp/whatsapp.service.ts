@@ -443,6 +443,27 @@ ${productosTexto}
     return this.sendMessage({ phone, message });
   }
 
+  async sendBirthdayMessage(
+    phone: string,
+    nombreCliente: string,
+    edad: number = 0
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const edadText = edad > 0 ? `¡Ya tienes ${edad} años!` : '';
+    
+    const message = `🎉 ¡Feliz cumpleaños, ${nombreCliente}! 🍻
+
+En Francachela te apreciamos mucho 💙
+Hoy tienes 10% de descuento* en todas tus compras.
+${edadText}
+
+¡Te esperamos!
+🌐 Visita: https://francachela-licores.github.io/francachela/
+
+*Válido solo hoy con tu código de cliente`;
+
+    return this.sendMessage({ phone, message });
+  }
+
   getConnectionStatus(): { 
     connected: boolean; 
     phone?: string; 

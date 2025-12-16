@@ -35,26 +35,10 @@ export class CombosService {
     return this.comboRepository.save(combo);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Combo>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.comboRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<Combo[]> {
+    return this.comboRepository.find({
       order: { nombre: 'ASC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Combo> {

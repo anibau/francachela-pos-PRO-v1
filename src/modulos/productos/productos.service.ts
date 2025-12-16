@@ -53,26 +53,10 @@ export class ProductosService {
     return savedProduct;
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Producto>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.productoRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<Producto[]> {
+    return this.productoRepository.find({
       order: { fechaCreacion: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Producto> {
@@ -226,7 +210,7 @@ export class ProductosService {
 
   async descontarStock(codigoBarra: string, cantidad: number, cajero: string, ventaId?: number): Promise<void> {
     const producto = await this.findByCodigoBarra(codigoBarra);
-    
+
     if (!producto.usaInventario) {
       return; // No descontar stock si el producto no usa inventario
     }
@@ -255,7 +239,7 @@ export class ProductosService {
 
   async devolverStock(codigoBarra: string, cantidad: number, cajero: string, ventaId?: number): Promise<void> {
     const producto = await this.findByCodigoBarra(codigoBarra);
-    
+
     if (!producto.usaInventario) {
       return;
     }

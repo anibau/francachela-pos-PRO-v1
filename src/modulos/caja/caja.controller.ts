@@ -7,7 +7,9 @@ import {
   Param, 
   UseGuards, 
   Query,
-  ParseIntPipe 
+  ParseIntPipe,
+  BadRequestException,
+  Logger
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CajaService } from './caja.service';
@@ -19,12 +21,15 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { DateRangeDto } from '../../common/dto/date-range.dto';
 
 @ApiTags('Caja')
 @Controller('caja')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class CajaController {
+  private readonly logger = new Logger(CajaController.name);
+
   constructor(private readonly cajaService: CajaService) {}
 
   @Post('abrir')
@@ -53,8 +58,8 @@ export class CajaController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener historial de cajas' })
   @ApiResponse({ status: 200, description: 'Historial de cajas obtenido exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.cajaService.findAll(paginationDto);
+  findAll() {
+    return this.cajaService.findAll();
   }
 
   @Get('actual')
@@ -78,31 +83,39 @@ export class CajaController {
   @Get('estadisticas')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obtener estadísticas de cajas por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)', required: false })
+  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)', required: false })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
-  getEstadisticas(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.cajaService.getEstadisticasCajas(inicio, fin);
+  @ApiResponse({ status: 400, description: 'Parámetros de fecha inválidos' })
+  async getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
+    try {
+      const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+      this.logger.log(`Obteniendo estadísticas de cajas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
+      
+      return await this.cajaService.getEstadisticasCajas(fechaInicio, fechaFin);
+    } catch (error) {
+      this.logger.error('Error obteniendo estadísticas de cajas:', error);
+      throw new BadRequestException('Error procesando parámetros de fecha: ' + error.message);
+    }
   }
 
   @Get('rango')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obtener cajas por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)', required: false })
+  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)', required: false })
   @ApiResponse({ status: 200, description: 'Cajas del rango obtenidas exitosamente' })
-  getCajasPorFecha(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.cajaService.getCajasPorFecha(inicio, fin);
+  @ApiResponse({ status: 400, description: 'Parámetros de fecha inválidos' })
+  async getCajasPorFecha(@Query() dateRangeDto: DateRangeDto) {
+    try {
+      const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+      this.logger.log(`Obteniendo cajas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
+      
+      return await this.cajaService.getCajasPorFecha(fechaInicio, fechaFin);
+    } catch (error) {
+      this.logger.error('Error obteniendo cajas por fecha:', error);
+      throw new BadRequestException('Error procesando parámetros de fecha: ' + error.message);
+    }
   }
 
   @Get(':id')
@@ -114,4 +127,3 @@ export class CajaController {
     return this.cajaService.findById(id);
   }
 }
-

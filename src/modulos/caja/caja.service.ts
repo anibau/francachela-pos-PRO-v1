@@ -65,26 +65,10 @@ export class CajaService {
     return this.findById(id);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Caja>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.cajaRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<Caja[]> {
+    return this.cajaRepository.find({
       order: { fechaApertura: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Caja> {
@@ -136,22 +120,27 @@ export class CajaService {
     const fechaInicio = caja.fechaApertura;
     const fechaFin = caja.fechaCierre || new Date();
 
-    // Calcular ventas
+    // Calcular ventas con relación a pagos
     const ventas = await this.ventaRepository.find({
       where: {
         fecha: Between(fechaInicio, fechaFin),
         cajero: caja.cajero,
         estado: EstadoVenta.COMPLETADO,
       },
+      relations: ['pagos'],
     });
 
     const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0);
 
-    // Desglose por método de pago
-    const desglosePorMetodo = ventas.reduce((acc, venta) => {
-      acc[venta.metodoPago] = (acc[venta.metodoPago] || 0) + venta.total;
-      return acc;
-    }, {});
+    // Desglose por método de pago usando la tabla venta_pagos
+    const desglosePorMetodo = {};
+    ventas.forEach(venta => {
+      if (venta.pagos && venta.pagos.length > 0) {
+        venta.pagos.forEach(pago => {
+          desglosePorMetodo[pago.metodoPago] = (desglosePorMetodo[pago.metodoPago] || 0) + pago.monto;
+        });
+      }
+    });
 
     // Calcular gastos
     const gastos = await this.gastoRepository.find({

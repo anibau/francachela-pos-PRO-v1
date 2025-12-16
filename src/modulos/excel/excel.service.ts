@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import * as ExcelJS from 'exceljs';
@@ -11,6 +11,8 @@ import { ExportVentasDto, TipoReporte } from './dto/export-ventas.dto';
 
 @Injectable()
 export class ExcelService {
+  private readonly logger = new Logger(ExcelService.name);
+
   constructor(
     @InjectRepository(Venta)
     private ventaRepository: Repository<Venta>,
@@ -25,27 +27,36 @@ export class ExcelService {
   ) {}
 
   async exportVentas(exportDto: ExportVentasDto): Promise<Buffer> {
-    const workbook = new ExcelJS.Workbook();
-    
-    switch (exportDto.tipoReporte || TipoReporte.VENTAS) {
-      case TipoReporte.VENTAS:
-        await this.createVentasSheet(workbook, exportDto);
-        break;
-      case TipoReporte.PRODUCTOS:
-        await this.createProductosSheet(workbook);
-        break;
-      case TipoReporte.CLIENTES:
-        await this.createClientesSheet(workbook);
-        break;
-      case TipoReporte.INVENTARIO:
-        await this.createInventarioSheet(workbook, exportDto);
-        break;
-      case TipoReporte.DELIVERY:
-        await this.createDeliverySheet(workbook, exportDto);
-        break;
-    }
+    try {
+      this.logger.log(`Generando reporte Excel: ${exportDto.tipoReporte || TipoReporte.VENTAS}`);
+      const workbook = new ExcelJS.Workbook();
+      
+      switch (exportDto.tipoReporte || TipoReporte.VENTAS) {
+        case TipoReporte.VENTAS:
+          await this.createVentasSheet(workbook, exportDto);
+          break;
+        case TipoReporte.PRODUCTOS:
+          await this.createProductosSheet(workbook);
+          break;
+        case TipoReporte.CLIENTES:
+          await this.createClientesSheet(workbook);
+          break;
+        case TipoReporte.INVENTARIO:
+          await this.createInventarioSheet(workbook, exportDto);
+          break;
+        case TipoReporte.DELIVERY:
+          await this.createDeliverySheet(workbook, exportDto);
+          break;
+        default:
+          throw new Error(`Tipo de reporte no soportado: ${exportDto.tipoReporte}`);
+      }
 
-    return await workbook.xlsx.writeBuffer() as unknown as Buffer;
+      this.logger.log('Reporte Excel generado exitosamente');
+      return await workbook.xlsx.writeBuffer() as unknown as Buffer;
+    } catch (error) {
+      this.logger.error('Error generando reporte Excel:', error);
+      throw new InternalServerErrorException('Error generando archivo Excel: ' + error.message);
+    }
   }
 
   private async createVentasSheet(workbook: ExcelJS.Workbook, exportDto: ExportVentasDto) {
@@ -59,14 +70,14 @@ export class ExcelService {
 
     const ventas = await this.ventaRepository.find({
       where: whereCondition,
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
       order: { fecha: 'DESC' }
     });
 
     // Headers
     const headers = [
       'ID', 'Fecha', 'Cliente', 'DNI Cliente', 'Subtotal', 'Descuento', 
-      'Total', 'Método Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
+      'Total', 'Métodos Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
       'Puntos Usados', 'Tipo Compra', 'Comentario'
     ];
 
@@ -87,6 +98,11 @@ export class ExcelService {
 
     // Datos
     ventas.forEach(venta => {
+      // Formatear métodos de pago desde la relación pagos
+      const metodosPago = venta.pagos && venta.pagos.length > 0 
+        ? venta.pagos.map(pago => `${pago.metodoPago}: S/ ${pago.monto.toFixed(2)}`).join(', ')
+        : 'Sin pagos registrados';
+
       const row = [
         venta.id,
         venta.fecha.toLocaleDateString(),
@@ -95,7 +111,7 @@ export class ExcelService {
         venta.subTotal,
         venta.descuento,
         venta.total,
-        venta.metodoPago,
+        metodosPago,
         venta.cajero,
         venta.estado,
         venta.puntosOtorgados,
@@ -120,15 +136,33 @@ export class ExcelService {
       column.width = 15;
     });
 
-    // Agregar totales
+    // Agregar totales - asegurar operaciones numéricas
+    const totalSubtotal = ventas.reduce((sum, v) => {
+      const subtotal = typeof v.subTotal === 'string' ? parseFloat(v.subTotal) : v.subTotal;
+      return sum + (isNaN(subtotal) ? 0 : subtotal);
+    }, 0);
+    
+    const totalDescuento = ventas.reduce((sum, v) => {
+      const descuento = typeof v.descuento === 'string' ? parseFloat(v.descuento) : v.descuento;
+      return sum + (isNaN(descuento) ? 0 : descuento);
+    }, 0);
+    
+    const totalTotal = ventas.reduce((sum, v) => {
+      const total = typeof v.total === 'string' ? parseFloat(v.total) : v.total;
+      return sum + (isNaN(total) ? 0 : total);
+    }, 0);
+    
+    const totalPuntosOtorgados = ventas.reduce((sum, v) => sum + (v.puntosOtorgados || 0), 0);
+    const totalPuntosUsados = ventas.reduce((sum, v) => sum + (v.puntosUsados || 0), 0);
+
     const totalRow = worksheet.addRow([
       '', '', '', 'TOTALES:', 
-      ventas.reduce((sum, v) => sum + v.subTotal, 0),
-      ventas.reduce((sum, v) => sum + v.descuento, 0),
-      ventas.reduce((sum, v) => sum + v.total, 0),
+      totalSubtotal,
+      totalDescuento,
+      totalTotal,
       '', '', '', 
-      ventas.reduce((sum, v) => sum + v.puntosOtorgados, 0),
-      ventas.reduce((sum, v) => sum + v.puntosUsados, 0)
+      totalPuntosOtorgados,
+      totalPuntosUsados
     ]);
     
     totalRow.font = { bold: true };
@@ -187,45 +221,108 @@ export class ExcelService {
   }
 
   private async createClientesSheet(workbook: ExcelJS.Workbook) {
-    const worksheet = workbook.addWorksheet('Clientes');
+    try {
+      this.logger.log('Generando hoja de clientes...');
+      const worksheet = workbook.addWorksheet('Clientes');
+      
+      const clientes = await this.clienteRepository.find({
+        order: { fechaRegistro: 'DESC' }
+      });
+
+      this.logger.log(`Procesando ${clientes.length} clientes`);
+
+      const headers = [
+        'ID', 'Nombres', 'Apellidos', 'DNI', 'Fecha Nacimiento', 'Teléfono',
+        'Fecha Registro', 'Puntos Acumulados', 'Código Corto', 'Dirección'
+      ];
+
+      worksheet.addRow(headers);
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE6E6FA' }
+      };
+
+      clientes.forEach((cliente, index) => {
+        try {
+          // Validar y limpiar datos antes de agregar a Excel
+          const row = [
+            cliente.id || '',
+            this.sanitizeString(cliente.nombres) || '',
+            this.sanitizeString(cliente.apellidos) || '',
+            this.sanitizeString(cliente.dni) || '',
+            cliente.fechaNacimiento ? this.formatDate(cliente.fechaNacimiento) : '',
+            this.sanitizeString(cliente.telefono) || '',
+            cliente.fechaRegistro ? this.formatDate(cliente.fechaRegistro) : '',
+            cliente.puntosAcumulados || 0,
+            this.sanitizeString(cliente.codigoCorto) || '',
+            this.sanitizeString(cliente.direccion) || ''
+          ];
+          
+          worksheet.addRow(row);
+        } catch (error) {
+          this.logger.warn(`Error procesando cliente ${cliente.id} en fila ${index + 2}:`, error);
+          // Agregar fila con datos básicos en caso de error
+          worksheet.addRow([
+            cliente.id || '',
+            'ERROR EN DATOS',
+            '',
+            cliente.dni || '',
+            '',
+            '',
+            '',
+            0,
+            '',
+            ''
+          ]);
+        }
+      });
+
+      worksheet.columns.forEach(column => {
+        column.width = 15;
+      });
+      
+      this.logger.log('Hoja de clientes generada exitosamente');
+    } catch (error) {
+      this.logger.error('Error generando hoja de clientes:', error);
+      throw new Error('Error procesando datos de clientes: ' + error.message);
+    }
+  }
+
+  /**
+   * Sanitiza strings para evitar problemas en Excel
+   */
+  private sanitizeString(value: any): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
     
-    const clientes = await this.clienteRepository.find({
-      order: { fechaRegistro: 'DESC' }
-    });
+    return String(value)
+      .replace(/[\x00-\x1F\x7F]/g, '') // Remover caracteres de control
+      .trim();
+  }
 
-    const headers = [
-      'ID', 'Nombres', 'Apellidos', 'DNI', 'Fecha Nacimiento', 'Teléfono',
-      'Fecha Registro', 'Puntos Acumulados', 'Código Corto', 'Dirección'
-    ];
-
-    worksheet.addRow(headers);
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE6E6FA' }
-    };
-
-    clientes.forEach(cliente => {
-      worksheet.addRow([
-        cliente.id,
-        cliente.nombres,
-        cliente.apellidos,
-        cliente.dni,
-        cliente.fechaNacimiento?.toLocaleDateString() || '',
-        cliente.telefono,
-        cliente.fechaRegistro.toLocaleDateString(),
-        cliente.puntosAcumulados,
-        cliente.codigoCorto,
-        cliente.direccion
-      ]);
-    });
-
-    worksheet.columns.forEach(column => {
-      column.width = 15;
-    });
+  /**
+   * Formatea fechas de manera segura
+   */
+  private formatDate(date: Date | string): string {
+    try {
+      if (!date) return '';
+      
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      
+      if (isNaN(dateObj.getTime())) {
+        return '';
+      }
+      
+      return dateObj.toLocaleDateString();
+    } catch (error) {
+      this.logger.warn('Error formateando fecha:', error);
+      return '';
+    }
   }
 
   private async createInventarioSheet(workbook: ExcelJS.Workbook, exportDto: ExportVentasDto) {

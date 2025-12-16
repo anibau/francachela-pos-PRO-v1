@@ -37,27 +37,11 @@ export class DeliveryService {
     return this.deliveryRepository.save(delivery);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Delivery>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.deliveryRepository.findAndCount({
+  async findAll(): Promise<Delivery[]> {
+    return this.deliveryRepository.find({
       relations: ['cliente'],
-      skip,
-      take: limit,
       order: { fecha: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Delivery> {

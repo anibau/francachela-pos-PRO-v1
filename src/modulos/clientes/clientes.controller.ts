@@ -40,8 +40,8 @@ export class ClientesController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los clientes' })
   @ApiResponse({ status: 200, description: 'Lista de clientes obtenida exitosamente' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.clientesService.findAll(paginationDto);
+  findAll() {
+    return this.clientesService.findAll();
   }
 
   @Get('search')
@@ -136,13 +136,4 @@ export class ClientesController {
     return this.clientesService.activate(id);
   }
 
-  @Post('send-info/:dni')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
-  @ApiOperation({ summary: 'Enviar información del cliente por WhatsApp usando DNI' })
-  @ApiResponse({ status: 201, description: 'Información enviada exitosamente' })
-  @ApiResponse({ status: 404, description: 'Cliente no encontrado' })
-  @ApiResponse({ status: 400, description: 'Cliente sin teléfono o error enviando mensaje' })
-  sendClientInfo(@Param('dni') dni: string) {
-    return this.clientesService.sendClientInfoByDni(dni);
-  }
 }

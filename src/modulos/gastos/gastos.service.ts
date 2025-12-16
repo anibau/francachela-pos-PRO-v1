@@ -24,26 +24,10 @@ export class GastosService {
     return this.gastoRepository.save(gasto);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Gasto>> {
-    const { page, limit, skip } = paginationDto;
-
-    const [data, total] = await this.gastoRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(): Promise<Gasto[]> {
+    return this.gastoRepository.find({
       order: { fecha: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
-    return {
-      data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
-    };
   }
 
   async findById(id: number): Promise<Gasto> {
@@ -190,25 +174,35 @@ export class GastosService {
     });
 
     const totalGastos = gastos.length;
-    const totalMonto = gastos.reduce((sum, gasto) => sum + gasto.monto, 0);
+    // Asegurar que monto sea un número usando parseFloat
+    const totalMonto = gastos.reduce((sum, gasto) => {
+      const gastoMonto = typeof gasto.monto === 'string' ? parseFloat(gasto.monto) : gasto.monto;
+      return sum + (isNaN(gastoMonto) ? 0 : gastoMonto);
+    }, 0);
     const promedioGasto = totalGastos > 0 ? totalMonto / totalGastos : 0;
 
-    // Agrupar por categoría
+    // Agrupar por categoría - asegurar operaciones numéricas
     const gastosPorCategoria = gastos.reduce((acc, gasto) => {
-      acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.monto;
+      const gastoMonto = typeof gasto.monto === 'string' ? parseFloat(gasto.monto) : gasto.monto;
+      const montoNumerico = isNaN(gastoMonto) ? 0 : gastoMonto;
+      acc[gasto.categoria] = (acc[gasto.categoria] || 0) + montoNumerico;
       return acc;
     }, {});
 
-    // Agrupar por método de pago
+    // Agrupar por método de pago - asegurar operaciones numéricas
     const gastosPorMetodo = gastos.reduce((acc, gasto) => {
-      acc[gasto.metodoPago] = (acc[gasto.metodoPago] || 0) + gasto.monto;
+      const gastoMonto = typeof gasto.monto === 'string' ? parseFloat(gasto.monto) : gasto.monto;
+      const montoNumerico = isNaN(gastoMonto) ? 0 : gastoMonto;
+      acc[gasto.metodoPago] = (acc[gasto.metodoPago] || 0) + montoNumerico;
       return acc;
     }, {});
 
-    // Top proveedores
+    // Top proveedores - asegurar operaciones numéricas
     const gastosPorProveedor = gastos.reduce((acc, gasto) => {
       if (gasto.proveedor) {
-        acc[gasto.proveedor] = (acc[gasto.proveedor] || 0) + gasto.monto;
+        const gastoMonto = typeof gasto.monto === 'string' ? parseFloat(gasto.monto) : gasto.monto;
+        const montoNumerico = isNaN(gastoMonto) ? 0 : gastoMonto;
+        acc[gasto.proveedor] = (acc[gasto.proveedor] || 0) + montoNumerico;
       }
       return acc;
     }, {});

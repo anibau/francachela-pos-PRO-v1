@@ -14,12 +14,15 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { VentasService } from './ventas.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
+import { UpdateVentaComentarioDto } from './dto/update-venta-comentario.dto';
+import { SalesCutoffDto } from './dto/sales-cutoff.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { DateRangeDto } from '../../common/dto/date-range.dto';
 
 /**
  * Controlador de Ventas
@@ -76,13 +79,11 @@ export class VentasController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ 
     summary: 'Obtener todas las ventas',
-    description: 'Retorna un listado paginado de todas las ventas del sistema'
+    description: 'Retorna un listado de todas las ventas del sistema'
   })
   @ApiResponse({ status: 200, description: 'Lista de ventas obtenida exitosamente' })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.ventasService.findAll(paginationDto);
+  findAll() {
+    return this.ventasService.findAll();
   }
 
   /**
@@ -118,16 +119,10 @@ export class VentasController {
     summary: 'Obtener estadísticas de ventas',
     description: 'Retorna estadísticas detalladas (total, promedio, métodos de pago, top productos)'
   })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)', example: '2024-12-01' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)', example: '2024-12-05' })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
-  getEstadisticas(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.ventasService.getEstadisticasVentas(inicio, fin);
+  getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
+    const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+    return this.ventasService.getEstadisticasVentas(fechaInicio, fechaFin);
   }
 
   /**
@@ -203,6 +198,57 @@ export class VentasController {
   }
 
   /**
+   * Generar corte de ventas por rango de fechas
+   * - Métricas financieras completas
+   * - Desglose por métodos de pago y productos
+   * - Análisis de tendencias por día
+   */
+  @Get('corte')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Generar corte de ventas',
+    description: 'Genera un reporte completo de ventas para un rango de fechas específico'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Corte de ventas generado exitosamente',
+    type: SalesCutoffDto
+  })
+  @ApiResponse({ status: 400, description: 'Rango de fechas inválido' })
+  getSalesCutoff(@Query() dateRangeDto: DateRangeDto): Promise<SalesCutoffDto> {
+    return this.ventasService.getSalesCutoffReport(dateRangeDto);
+  }
+
+  /**
+   * Actualizar comentario de una venta
+   * - Solo permite modificar el comentario
+   * - Valida que la venta no esté anulada
+   * - Registra auditoría del cambio
+   */
+  @Patch(':id/comentario')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Actualizar comentario de venta',
+    description: 'Permite actualizar únicamente el comentario de una venta existente'
+  })
+  @ApiResponse({ status: 200, description: 'Comentario actualizado exitosamente' })
+  @ApiResponse({ status: 400, description: 'No se puede modificar una venta anulada' })
+  @ApiResponse({ status: 404, description: 'Venta no encontrada' })
+  updateComentario(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateVentaComentarioDto: UpdateVentaComentarioDto,
+    @CurrentUser() user: Usuario
+  ) {
+    return this.ventasService.updateComentario(
+      id, 
+      updateVentaComentarioDto.comentario || '', 
+      user.username
+    );
+  }
+
+  /**
    * Anular una venta
    * - Devuelve stock de productos
    * - Revierte puntos del cliente
@@ -222,4 +268,3 @@ export class VentasController {
     return this.ventasService.anularVenta(id, user.username);
   }
 }
-
