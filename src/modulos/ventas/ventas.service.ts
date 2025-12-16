@@ -245,7 +245,7 @@ export class VentasService {
 
   async findAll(): Promise<Venta[]> {
     return this.ventaRepository.find({
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
       order: { fecha: 'DESC' },
     });
   }
@@ -253,7 +253,7 @@ export class VentasService {
   async findById(id: number): Promise<Venta> {
     const venta = await this.ventaRepository.findOne({
       where: { id },
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
     });
     if (!venta) {
       throw new NotFoundException('Venta no encontrada');
@@ -296,7 +296,7 @@ export class VentasService {
   async findByTicketId(ticketId: string): Promise<Venta> {
     const venta = await this.ventaRepository.findOne({
       where: { ticketId },
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
     });
     if (!venta) {
       throw new NotFoundException('Venta no encontrada');
@@ -311,7 +311,7 @@ export class VentasService {
       where: {
         fecha: Between(fechaInicio, fechaFin),
       },
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
       skip,
       take: limit,
       order: { fecha: 'DESC' },
@@ -335,7 +335,7 @@ export class VentasService {
 
     const [data, total] = await this.ventaRepository.findAndCount({
       where: { cliente: { id: clienteId } },
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
       skip,
       take: limit,
       order: { fecha: 'DESC' },
@@ -435,7 +435,7 @@ export class VentasService {
         fecha: Between(startOfDay, endOfDay),
         estado: EstadoVenta.COMPLETADO,
       },
-      relations: ['cliente'],
+      relations: ['cliente', 'pagos'],
       order: { fecha: 'DESC' },
     });
 
@@ -730,7 +730,7 @@ export class VentasService {
         where: {
           fecha: Between(fechaInicio, fechaFin)
         },
-        relations: ['cliente'],
+        relations: ['cliente', 'pagos'],
         order: { fecha: 'ASC' }
       });
 
