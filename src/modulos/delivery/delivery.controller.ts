@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole, EstadoDelivery } from '../../common/enums';
+import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Delivery')
@@ -63,16 +64,10 @@ export class DeliveryController {
   @Get('estadisticas')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obtener estadísticas de delivery por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
-  getEstadisticas(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.deliveryService.getEstadisticasDelivery(inicio, fin);
+  getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
+    const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+    return this.deliveryService.getEstadisticasDelivery(fechaInicio, fechaFin);
   }
 
   @Get('estado/:estado')

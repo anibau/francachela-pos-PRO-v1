@@ -65,23 +65,20 @@ export class IsValidMontoRecibidoConstraint implements ValidatorConstraintInterf
 }
 
 /**
- * Validador para métodos de pago múltiples
- * Verifica que al menos uno de metodoPago o metodosPageo esté presente
+ * Validador para métodos de pago
+ * Verifica que metodosPageo esté presente y sea válido
  */
 @ValidatorConstraint({ name: 'isValidPaymentMethods', async: false })
 export class IsValidPaymentMethodsConstraint implements ValidatorConstraintInterface {
   validate(value: any, args: ValidationArguments): boolean {
     const object = args.object as CreateVentaDto;
     
-    // Al menos uno debe estar presente
-    const hasLegacyMethod = object.metodoPago !== undefined && object.metodoPago !== null;
-    const hasMultiMethods = object.metodosPageo && object.metodosPageo.length > 0;
-    
-    return !!(hasLegacyMethod || hasMultiMethods);
+    // metodosPageo debe estar presente y tener al menos un método
+    return !!(object.metodosPageo && object.metodosPageo.length > 0);
   }
 
   defaultMessage(args: ValidationArguments): string {
-    return 'Debe especificar al menos un método de pago (metodoPago o metodosPageo)';
+    return 'Debe especificar al menos un método de pago en metodosPageo';
   }
 }
 
@@ -203,32 +200,21 @@ export class CreateVentaDto {
   @Validate(IsValidRecargoExtraConstraint)
   recargoExtra?: number = 0;
 
-  @ApiPropertyOptional({ 
-    description: 'Método de pago utilizado (LEGACY - usar metodosPageo para múltiples métodos)',
-    enum: MetodoPago,
-    example: MetodoPago.EFECTIVO,
-    enumName: 'MetodoPago'
-  })
-  @IsOptional()
-  @IsEnum(MetodoPago, { 
-    message: `Método de pago debe ser uno de: ${Object.values(MetodoPago).join(', ')}`
-  })
-  metodoPago?: MetodoPago;
-
-  @ApiPropertyOptional({ 
-    description: 'Múltiples métodos de pago para una transacción (NUEVO)',
+  @ApiProperty({ 
+    description: 'Métodos de pago para la transacción',
     type: [MetodoPagoDto],
     example: [
       { metodoPago: 'EFECTIVO', monto: 50.00 },
       { metodoPago: 'YAPE', monto: 45.00, referencia: 'TXN-123456' }
     ]
   })
-  @IsOptional()
   @IsArray({ message: 'metodosPageo debe ser un array' })
+  @ArrayMinSize(1, { message: 'Debe especificar al menos un método de pago' })
   @ArrayMaxSize(5, { message: 'Máximo 5 métodos de pago por transacción' })
   @ValidateNested({ each: true })
   @Type(() => MetodoPagoDto)
-  metodosPageo?: MetodoPagoDto[];
+  @Validate(IsValidPaymentMethodsConstraint)
+  metodosPageo: MetodoPagoDto[];
 
   @ApiPropertyOptional({ 
     description: 'Comentario o notas sobre la venta',

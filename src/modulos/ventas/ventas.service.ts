@@ -140,10 +140,6 @@ export class VentasService {
         cajero,
         estado: EstadoVenta.COMPLETADO,
         estadoVenta: 'COMPLETADO',
-        // DEPRECATED: Mantener para backward compatibility temporal
-        metodosPageoUsados: this._procesarMetodosPago(createVentaDto, resumen.total),
-        // Mantener metodoPago para compatibilidad (primer método usado)
-        metodoPago: pagosNormalizados[0]?.metodoPago || createVentaDto.metodoPago,
       });
 
       const ventaGuardada = await queryRunner.manager.save(venta);
@@ -879,8 +875,8 @@ export class VentasService {
   }
 
   /**
-   * Procesa los métodos de pago de una venta
-   * Maneja tanto el formato legacy (metodoPago) como el nuevo (metodosPageo)
+   * Procesa los métodos de pago para una venta
+   * Usa únicamente el formato normalizado metodosPageo
    */
   private _procesarMetodosPago(
     createVentaDto: CreateVentaDto, 
@@ -888,37 +884,27 @@ export class VentasService {
   ): { metodoPago: MetodoPago; monto: number; referencia?: string; timestamp: Date }[] {
     const now = new Date();
     
-    // Si se usa el nuevo formato de múltiples métodos de pago
-    if (createVentaDto.metodosPageo && createVentaDto.metodosPageo.length > 0) {
-      // Validar que la suma de montos sea igual al total
-      const sumaMontos = createVentaDto.metodosPageo.reduce((sum, metodo) => sum + metodo.monto, 0);
-      const diferencia = Math.abs(sumaMontos - totalVenta);
-      
-      if (diferencia > 0.01) { // Tolerancia de 1 centavo para errores de redondeo
-        throw new BadRequestException(
-          `La suma de métodos de pago (S/ ${sumaMontos.toFixed(2)}) debe ser igual al total (S/ ${totalVenta.toFixed(2)})`
-        );
-      }
-      
-      return createVentaDto.metodosPageo.map(metodo => ({
-        metodoPago: metodo.metodoPago,
-        monto: metodo.monto,
-        referencia: metodo.referencia,
-        timestamp: now
-      }));
+    // Validar que metodosPageo esté presente
+    if (!createVentaDto.metodosPageo || createVentaDto.metodosPageo.length === 0) {
+      throw new BadRequestException('Debe especificar al menos un método de pago');
     }
     
-    // Formato legacy: un solo método de pago
-    if (createVentaDto.metodoPago) {
-      return [{
-        metodoPago: createVentaDto.metodoPago,
-        monto: totalVenta,
-        timestamp: now
-      }];
+    // Validar que la suma de montos sea igual al total
+    const sumaMontos = createVentaDto.metodosPageo.reduce((sum, metodo) => sum + metodo.monto, 0);
+    const diferencia = Math.abs(sumaMontos - totalVenta);
+    
+    if (diferencia > 0.01) { // Tolerancia de 1 centavo para errores de redondeo
+      throw new BadRequestException(
+        `La suma de métodos de pago (S/ ${sumaMontos.toFixed(2)}) debe ser igual al total (S/ ${totalVenta.toFixed(2)})`
+      );
     }
     
-    // Esto no debería pasar por la validación, pero por seguridad
-    throw new BadRequestException('Debe especificar al menos un método de pago');
+    return createVentaDto.metodosPageo.map(metodo => ({
+      metodoPago: metodo.metodoPago,
+      monto: metodo.monto,
+      referencia: metodo.referencia,
+      timestamp: now
+    }));
   }
 
   /**
@@ -934,31 +920,22 @@ export class VentasService {
     const pagosNormalizados: CreateVentaPagoDto[] = [];
     let secuencia = 1;
 
-    // Si hay métodos de pago múltiples, procesarlos
-    if (createVentaDto.metodosPageoUsados && createVentaDto.metodosPageoUsados.length > 0) {
-      for (const metodo of createVentaDto.metodosPageoUsados) {
-        pagosNormalizados.push({
-          metodoPago: metodo.metodoPago,
-          monto: metodo.monto,
-          referencia: metodo.referencia || null,
-          estado: 'COMPLETADO',
-          notas: metodo.notas || null,
-          fechaRegistro: new Date(),
-          registradoPor: cajero,
-          secuencia: secuencia++,
-        });
-      }
-    } else {
-      // Fallback: usar método de pago único
+    // Validar que metodosPageo esté presente
+    if (!createVentaDto.metodosPageo || createVentaDto.metodosPageo.length === 0) {
+      throw new BadRequestException('Debe especificar al menos un método de pago');
+    }
+
+    // Procesar métodos de pago
+    for (const metodo of createVentaDto.metodosPageo) {
       pagosNormalizados.push({
-        metodoPago: createVentaDto.metodoPago,
-        monto: totalVenta,
-        referencia: null,
+        metodoPago: metodo.metodoPago,
+        monto: metodo.monto,
+        referencia: metodo.referencia || null,
         estado: 'COMPLETADO',
         notas: null,
         fechaRegistro: new Date(),
         registradoPor: cajero,
-        secuencia: 1,
+        secuencia: secuencia++,
       });
     }
 

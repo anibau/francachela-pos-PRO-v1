@@ -119,16 +119,10 @@ export class VentasController {
     summary: 'Obtener estadísticas de ventas',
     description: 'Retorna estadísticas detalladas (total, promedio, métodos de pago, top productos)'
   })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)', example: '2024-12-01' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)', example: '2024-12-05' })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
-  getEstadisticas(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.ventasService.getEstadisticasVentas(inicio, fin);
+  getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
+    const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+    return this.ventasService.getEstadisticasVentas(fechaInicio, fechaFin);
   }
 
   /**

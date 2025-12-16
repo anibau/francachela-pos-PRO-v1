@@ -1,55 +1,68 @@
-import { IsDateString, IsOptional } from 'class-validator';
+import { IsOptional, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import { DatePosUtil } from '../utils/date-pos.util';
 
 export class DateRangeDto {
   @ApiProperty({
-    description: 'Fecha de inicio en formato YYYY-MM-DD',
-    example: '2025-12-01',
+    description: 'Fecha de inicio en formato POS: YYYY-MM-DD HH:mm:ss o YYYY-MM-DD',
+    example: '2025-12-01 00:00:00',
     required: false,
   })
   @IsOptional()
-  @IsDateString({}, { message: 'fechaInicio debe ser una fecha válida en formato YYYY-MM-DD' })
+  @IsString()
+  @Matches(
+    /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/,
+    { message: 'fechaInicio debe estar en formato YYYY-MM-DD HH:mm:ss o YYYY-MM-DD' }
+  )
   @Transform(({ value }) => {
     if (!value) return undefined;
-    // Asegurar que la fecha esté en formato correcto
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
-      throw new Error('Fecha inválida');
+    // Validar usando la utilidad POS
+    try {
+      DatePosUtil.parseDate(value, false);
+      return value;
+    } catch (error) {
+      throw new Error(`fechaInicio: ${error.message}`);
     }
-    return value;
   })
   fechaInicio?: string;
 
   @ApiProperty({
-    description: 'Fecha de fin en formato YYYY-MM-DD',
-    example: '2025-12-31',
+    description: 'Fecha de fin en formato POS: YYYY-MM-DD HH:mm:ss o YYYY-MM-DD',
+    example: '2025-12-31 23:59:59',
     required: false,
   })
   @IsOptional()
-  @IsDateString({}, { message: 'fechaFin debe ser una fecha válida en formato YYYY-MM-DD' })
+  @IsString()
+  @Matches(
+    /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/,
+    { message: 'fechaFin debe estar en formato YYYY-MM-DD HH:mm:ss o YYYY-MM-DD' }
+  )
   @Transform(({ value }) => {
     if (!value) return undefined;
-    // Asegurar que la fecha esté en formato correcto
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
-      throw new Error('Fecha inválida');
+    // Validar usando la utilidad POS
+    try {
+      DatePosUtil.parseDate(value, true);
+      return value;
+    } catch (error) {
+      throw new Error(`fechaFin: ${error.message}`);
     }
-    return value;
   })
   fechaFin?: string;
 
   /**
-   * Convierte las fechas string a objetos Date
+   * Convierte las fechas string a objetos Date usando utilidad POS
+   * Maneja automáticamente inicio/fin de día para formatos simplificados
    */
   getDateRange(): { fechaInicio: Date; fechaFin: Date } {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return DatePosUtil.parseQueryDateRange(this.fechaInicio, this.fechaFin);
+  }
 
-    return {
-      fechaInicio: this.fechaInicio ? new Date(this.fechaInicio) : startOfMonth,
-      fechaFin: this.fechaFin ? new Date(this.fechaFin + 'T23:59:59.999Z') : endOfMonth,
-    };
+  /**
+   * Valida que el rango de fechas sea válido
+   */
+  validateRange(): void {
+    const { fechaInicio, fechaFin } = this.getDateRange();
+    DatePosUtil.validateDateRange(fechaInicio, fechaFin);
   }
 }

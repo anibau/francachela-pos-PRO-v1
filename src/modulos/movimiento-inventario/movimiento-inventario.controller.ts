@@ -16,6 +16,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole, TipoMovimiento } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { DateRangeDto } from '../../common/dto/date-range.dto';
 
 @ApiTags('Movimiento Inventario')
 @Controller('movimiento-inventario')
@@ -52,16 +53,10 @@ export class MovimientoInventarioController {
   @Get('estadisticas')
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Obtener estadísticas de movimientos por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
-  getEstadisticas(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.movimientoInventarioService.getEstadisticasMovimientos(inicio, fin);
+  getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
+    const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+    return this.movimientoInventarioService.getEstadisticasMovimientos(fechaInicio, fechaFin);
   }
 
   @Get('producto/:codigoBarra')

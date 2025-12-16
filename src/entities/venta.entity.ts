@@ -40,12 +40,7 @@ export class Venta {
   @Column('decimal', { precision: 10, scale: 2, transformer: decimalTransformer })
   total: number;
 
-  @Column({
-    type: 'enum',
-    enum: MetodoPago,
-    default: MetodoPago.EFECTIVO,
-  })
-  metodoPago: MetodoPago;
+  // Campo metodoPago eliminado - usar relación pagos[] en su lugar
 
   @Column({ nullable: true })
   comentario: string;
@@ -93,23 +88,7 @@ export class Venta {
   })
   pagos: VentaPago[];
 
-  /**
-   * @deprecated Campo legacy mantenido temporalmente para migración
-   * Será eliminado una vez que todos los datos sean migrados a la tabla venta_pagos
-   * NO USAR en nuevas implementaciones
-   */
-  @Column({ 
-    type: 'jsonb', 
-    default: [],
-    nullable: true,
-    comment: 'DEPRECATED - Usar relación pagos[] en su lugar'
-  })
-  metodosPageoUsados?: {
-    metodoPago: MetodoPago;
-    monto: number;
-    referencia?: string;
-    timestamp: Date;
-  }[];
+  // Campo metodosPageoUsados eliminado - usar relación pagos[] en su lugar
 
   /**
    * Estado de la venta completa
