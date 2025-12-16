@@ -85,7 +85,9 @@ export class VentasService {
       let cliente: Cliente | null = null;
       if (createVentaDto.clienteId) {
         cliente = await this.clientesService.findById(createVentaDto.clienteId);
-        this.logger.debug(`✓ Cliente validado: ${cliente.nombreCompleto}`);
+        if (cliente) {
+          this.logger.debug(`✓ Cliente validado: ${cliente.nombreCompleto}`);
+        }
       }
 
       // ===== 2. VALIDACIÓN Y PROCESAMIENTO DE PRODUCTOS =====

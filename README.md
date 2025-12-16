@@ -248,6 +248,11 @@ http://localhost:3000/api/docs
 - `POST /clientes` - Crear cliente
 - `GET /clientes/:id/historial` - Historial de compras
 
+#### Administración
+- `POST /admin/sync-sequences` - Sincronizar secuencias de BD
+- `GET /admin/sequence-status` - Ver estado de secuencias
+- `POST /admin/sync-sequence/:tableName` - Sincronizar tabla específica
+
 ## 🔐 Autenticación y Autorización
 
 ### Sistema de Roles

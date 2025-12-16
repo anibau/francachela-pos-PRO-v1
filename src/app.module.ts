@@ -20,6 +20,7 @@ import { MovimientoInventarioModule } from './modulos/movimiento-inventario/movi
 import { WhatsappModule } from './modulos/whatsapp/whatsapp.module';
 import { ExcelModule } from './modulos/excel/excel.module';
 import { SeederModule } from './database/seeders/seeder.module';
+import { AdminModule } from './modulos/admin/admin.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { SeederModule } from './database/seeders/seeder.module';
     WhatsappModule,
     ExcelModule,
     SeederModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

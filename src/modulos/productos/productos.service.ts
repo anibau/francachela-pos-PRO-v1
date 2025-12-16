@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Producto } from '../../entities/producto.entity';
@@ -29,28 +29,38 @@ export class ProductosService {
       throw new ConflictException('El código de barras ya existe');
     }
 
-    const producto = this.productoRepository.create(createProductoDto);
-    const savedProduct = await this.productoRepository.save(producto);
+    try {
+      const producto = this.productoRepository.create(createProductoDto);
+      const savedProduct = await this.productoRepository.save(producto);
 
-    // Registrar movimiento inicial de inventario si tiene stock
-    if (savedProduct.cantidadActual > 0) {
-      await this.registrarMovimiento({
-        codigoBarra: savedProduct.codigoBarra,
-        descripcion: savedProduct.productoDescripcion,
-        costo: savedProduct.costo,
-        precioVenta: savedProduct.precio,
-        existenciaAnterior: 0,
-        existenciaNueva: savedProduct.cantidadActual,
-        existencia: savedProduct.cantidadActual, // Campo requerido
-        invMinimo: savedProduct.cantidadMinima,
-        tipo: TipoMovimiento.ENTRADA,
-        cantidad: savedProduct.cantidadActual,
-        cajero,
-        observaciones: 'Stock inicial del producto',
-      });
+      // Registrar movimiento inicial de inventario si tiene stock
+      if (savedProduct.cantidadActual > 0) {
+        await this.registrarMovimiento({
+          codigoBarra: savedProduct.codigoBarra,
+          descripcion: savedProduct.productoDescripcion,
+          costo: savedProduct.costo,
+          precioVenta: savedProduct.precio,
+          existenciaAnterior: 0,
+          existenciaNueva: savedProduct.cantidadActual,
+          existencia: savedProduct.cantidadActual, // Campo requerido
+          invMinimo: savedProduct.cantidadMinima,
+          tipo: TipoMovimiento.ENTRADA,
+          cantidad: savedProduct.cantidadActual,
+          cajero,
+          observaciones: 'Stock inicial del producto',
+        });
+      }
+
+      return savedProduct;
+    } catch (error) {
+      // Manejar errores de secuencia duplicada
+      if (error.code === '23505' || error.message?.includes('duplicate key')) {
+        throw new BadRequestException(
+          'Error al generar ID del producto. Por favor ejecute la sincronización de secuencias (POST /admin/sync-sequences) y reintente.'
+        );
+      }
+      throw error;
     }
-
-    return savedProduct;
   }
 
   async findAll(): Promise<Producto[]> {
