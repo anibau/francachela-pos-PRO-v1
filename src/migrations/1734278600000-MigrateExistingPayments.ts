@@ -54,7 +54,7 @@ export class MigrateExistingPayments1734278600000 implements MigrationInterface 
       )
       SELECT 
         v.id as "ventaId",
-        (jsonb_array_elements(v."metodosPageoUsados")->>'metodoPago')::varchar as "metodoPago",
+        (jsonb_array_elements(v."metodosPageoUsados")->>'metodoPago')::ventas_metodopago_enum as "metodoPago",
         ((jsonb_array_elements(v."metodosPageoUsados")->>'monto')::decimal) as monto,
         (jsonb_array_elements(v."metodosPageoUsados")->>'referencia')::varchar as referencia,
         'COMPLETADO' as estado,

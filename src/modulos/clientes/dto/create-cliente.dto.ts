@@ -16,7 +16,7 @@ export class CreateClienteDto {
   @ApiProperty({ description: 'DNI del cliente', example: '12345678' })
   @IsString()
   @IsNotEmpty()
-  @Length(8, 8, { message: 'El DNI debe tener exactamente 8 dígitos' })
+  @Length(8, 10, { message: 'El DNI debe tener entre 8 y 10 dígitos' })
   dni: string;
 
   @ApiPropertyOptional({ description: 'Fecha de nacimiento', example: '1990-05-15' })

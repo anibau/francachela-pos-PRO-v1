@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, DataSource } from 'typeorm';
 import { Venta } from '../../entities/venta.entity';
@@ -85,7 +91,7 @@ export class VentasService {
       // ===== 2. VALIDACIÓN Y PROCESAMIENTO DE PRODUCTOS =====
       const productosValidados = await this._validarYProcesarProductos(
         createVentaDto.listaProductos,
-        queryRunner
+        queryRunner,
       );
 
       // ===== 3. CÁLCULO DE TOTALES =====
@@ -94,7 +100,7 @@ export class VentasService {
         createVentaDto.descuento || 0,
         createVentaDto.recargoExtra || 0,
         createVentaDto.puntosUsados || 0,
-        cliente
+        cliente,
       );
 
       // ===== 4. VALIDACIÓN DE PUNTOS DEL CLIENTE =====
@@ -104,10 +110,12 @@ export class VentasService {
         }
         if (cliente.puntosAcumulados < createVentaDto.puntosUsados) {
           throw new BadRequestException(
-            `El cliente solo tiene ${cliente.puntosAcumulados} puntos, no puede usar ${createVentaDto.puntosUsados}`
+            `El cliente solo tiene ${cliente.puntosAcumulados} puntos, no puede usar ${createVentaDto.puntosUsados}`,
           );
         }
-        this.logger.debug(`✓ Puntos validados: ${cliente.puntosAcumulados} >= ${createVentaDto.puntosUsados}`);
+        this.logger.debug(
+          `✓ Puntos validados: ${cliente.puntosAcumulados} >= ${createVentaDto.puntosUsados}`,
+        );
       }
 
       // ===== 5. GENERAR TICKET ID =====
@@ -116,10 +124,10 @@ export class VentasService {
 
       // ===== 6. PROCESAR MÉTODOS DE PAGO NORMALIZADOS =====
       const pagosNormalizados = await this._procesarPagosNormalizados(
-        createVentaDto, 
-        resumen.total, 
-        cajero, 
-        queryRunner
+        createVentaDto,
+        resumen.total,
+        cajero,
+        queryRunner,
       );
       this.logger.debug(`✓ Pagos normalizados procesados: ${pagosNormalizados.length} métodos`);
 
@@ -143,17 +151,27 @@ export class VentasService {
       });
 
       const ventaGuardada = await queryRunner.manager.save(venta);
-      
+
       // ===== 8. GUARDAR PAGOS NORMALIZADOS =====
-      for (const pagoData of pagosNormalizados) {
+      for (let i = 0; i < pagosNormalizados.length; i++) {
+        const pagoData = pagosNormalizados[i];
         const ventaPago = this.ventaPagoRepository.create({
-          ...pagoData,
+          metodoPago: pagoData.metodoPago,
+          monto: pagoData.monto,
+          referencia: pagoData.referencia || undefined,
+          notas: pagoData.notas || undefined,
+          estado: 'COMPLETADO',
+          fechaRegistro: new Date(),
+          registradoPor: cajero,
+          secuencia: i + 1,
           ventaId: ventaGuardada.id,
         });
         await queryRunner.manager.save(ventaPago);
       }
-      
-      this.logger.log(`✓ Venta y ${pagosNormalizados.length} pagos guardados - ID: ${ventaGuardada.id}, Ticket: ${ticketId}`);
+
+      this.logger.log(
+        `✓ Venta y ${pagosNormalizados.length} pagos guardados - ID: ${ventaGuardada.id}, Ticket: ${ticketId}`,
+      );
 
       // ===== 9. DESCONTAR STOCK DE PRODUCTOS =====
       for (const item of productosValidados) {
@@ -167,7 +185,7 @@ export class VentasService {
           this.logger.debug(`✓ Stock descontado: ${item.descripcion} (-${item.cantidad})`);
         } catch (error) {
           throw new InternalServerErrorException(
-            `Error descontando stock de ${item.descripcion}: ${error.message}`
+            `Error descontando stock de ${item.descripcion}: ${error.message}`,
           );
         }
       }
@@ -181,13 +199,11 @@ export class VentasService {
               cliente.id,
               createVentaDto.puntosUsados,
               ventaGuardada.id,
-              'Descuento en compra'
+              'Descuento en compra',
             );
             this.logger.debug(`✓ Puntos canjeados: -${createVentaDto.puntosUsados}`);
           } catch (error) {
-            throw new InternalServerErrorException(
-              `Error canjeando puntos: ${error.message}`
-            );
+            throw new InternalServerErrorException(`Error canjeando puntos: ${error.message}`);
           }
         }
 
@@ -202,9 +218,7 @@ export class VentasService {
             );
             this.logger.debug(`✓ Puntos acumulados: +${resumen.puntosOtorgados}`);
           } catch (error) {
-            throw new InternalServerErrorException(
-              `Error acumulando puntos: ${error.message}`
-            );
+            throw new InternalServerErrorException(`Error acumulando puntos: ${error.message}`);
           }
         }
       }
@@ -222,21 +236,20 @@ export class VentasService {
 
       // Retornar venta con relaciones cargadas
       return this.findById(ventaGuardada.id);
-
     } catch (error) {
       // ROLLBACK automático al salir del catch
       await queryRunner.rollbackTransaction();
-      
+
       this.logger.error(`❌ Error creando venta: ${error.message}`);
-      
+
       // Re-lanzar excepciones conocidas
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
-      
+
       // Convertir otros errores a formato standar
       throw new InternalServerErrorException(
-        `Error creando venta: ${error.message || 'Error desconocido'}`
+        `Error creando venta: ${error.message || 'Error desconocido'}`,
       );
     } finally {
       await queryRunner.release();
@@ -264,11 +277,7 @@ export class VentasService {
   /**
    * Actualiza solo el comentario de una venta existente
    */
-  async updateComentario(
-    id: number, 
-    comentario: string, 
-    usuarioActual: string
-  ): Promise<Venta> {
+  async updateComentario(id: number, comentario: string, usuarioActual: string): Promise<Venta> {
     this.logger.log(`Actualizando comentario de venta ${id} por usuario ${usuarioActual}`);
 
     // Verificar que la venta existe
@@ -287,7 +296,7 @@ export class VentasService {
 
     // Log para auditoría
     this.logger.log(
-      `Comentario actualizado en venta ${id}: "${comentarioAnterior}" → "${comentario}" por ${usuarioActual}`
+      `Comentario actualizado en venta ${id}: "${comentarioAnterior}" → "${comentario}" por ${usuarioActual}`,
     );
 
     return ventaActualizada;
@@ -304,7 +313,11 @@ export class VentasService {
     return venta;
   }
 
-  async findByDateRange(fechaInicio: Date, fechaFin: Date, paginationDto: PaginationDto): Promise<PaginatedResult<Venta>> {
+  async findByDateRange(
+    fechaInicio: Date,
+    fechaFin: Date,
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResult<Venta>> {
     const { page, limit, skip } = paginationDto;
 
     const [data, total] = await this.ventaRepository.findAndCount({
@@ -330,7 +343,10 @@ export class VentasService {
     };
   }
 
-  async findByCliente(clienteId: number, paginationDto: PaginationDto): Promise<PaginatedResult<Venta>> {
+  async findByCliente(
+    clienteId: number,
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResult<Venta>> {
     const { page, limit, skip } = paginationDto;
 
     const [data, total] = await this.ventaRepository.findAndCount({
@@ -363,12 +379,7 @@ export class VentasService {
 
     // Devolver stock de productos
     for (const item of venta.listaProductos) {
-      await this.productosService.devolverStock(
-        item.codigoBarra,
-        item.cantidad,
-        cajero,
-        venta.id,
-      );
+      await this.productosService.devolverStock(item.codigoBarra, item.cantidad, cajero, venta.id);
     }
 
     // Revertir puntos del cliente
@@ -398,20 +409,23 @@ export class VentasService {
     // Enviar notificación de anulación por WhatsApp si el cliente tiene teléfono
     if (venta.cliente && venta.cliente.telefono) {
       try {
-        this.logger.log(`📱 Enviando notificación de anulación WhatsApp a ${venta.cliente.telefono}`);
-        
-        const mensaje = `⚠️ Tu venta ha sido anulada\n\n` +
+        this.logger.log(
+          `📱 Enviando notificación de anulación WhatsApp a ${venta.cliente.telefono}`,
+        );
+
+        const mensaje =
+          `⚠️ Tu venta ha sido anulada\n\n` +
           `🎫 Ticket: ${venta.ticketId}\n` +
           `💰 Monto: S/ ${venta.total.toFixed(2)}\n` +
           `⭐ Puntos revertidos: ${venta.puntosOtorgados}\n\n` +
           `Para más información, contacta a Francachela. 📞`;
-        
+
         const resultado = await this.whatsappService.sendMessage({
           phone: venta.cliente.telefono,
           message: mensaje,
           ventaId: id,
         });
-        
+
         if (resultado.success) {
           this.logger.log(`✅ Notificación de anulación enviada a ${venta.cliente.telefono}`);
         } else {
@@ -425,7 +439,7 @@ export class VentasService {
     return ventaAnulada;
   }
 
-  async getVentasDelDia(): Promise<{ ventas: Venta[], totalVentas: number, totalMonto: number }> {
+  async getVentasDelDia(): Promise<{ ventas: Venta[]; totalVentas: number; totalMonto: number }> {
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
@@ -456,7 +470,7 @@ export class VentasService {
         'COALESCE(SUM(venta.descuento), 0) as totalDescuentos',
         'COALESCE(SUM(venta.recargoExtra), 0) as totalRecargos',
         'COALESCE(SUM(venta.puntosOtorgados), 0) as totalPuntosOtorgados',
-        'COALESCE(SUM(venta.puntosUsados), 0) as totalPuntosUsados'
+        'COALESCE(SUM(venta.puntosUsados), 0) as totalPuntosUsados',
       ])
       .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
       .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -469,7 +483,7 @@ export class VentasService {
       .select([
         'pago.metodoPago as metodoPago',
         'COUNT(DISTINCT venta.id) as cantidadVentas',
-        'COALESCE(SUM(pago.monto), 0) as montoTotal'
+        'COALESCE(SUM(pago.monto), 0) as montoTotal',
       ])
       .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
       .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -481,16 +495,17 @@ export class VentasService {
     // ===== CONSULTA OPTIMIZADA: TOP PRODUCTOS VENDIDOS =====
     const topProductos = await this.ventaRepository
       .createQueryBuilder('venta')
+      .leftJoin('LATERAL jsonb_array_elements(venta.listaProductos)', 'lp', 'true')
       .select([
-        "jsonb_array_elements(venta.listaProductos)->>'codigoBarra' as codigoBarra",
-        "jsonb_array_elements(venta.listaProductos)->>'descripcion' as descripcion",
-        'SUM((jsonb_array_elements(venta.listaProductos)->>\'cantidad\')::integer) as cantidad',
-        'SUM((jsonb_array_elements(venta.listaProductos)->>\'subtotal\')::decimal) as monto'
+        "lp->>'codigoBarra' AS codigoBarra",
+        "lp->>'descripcion' AS descripcion",
+        "SUM((lp->>'cantidad')::integer) AS cantidad",
+        "SUM((lp->>'subtotal')::numeric) AS monto",
       ])
       .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
       .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
-      .groupBy("jsonb_array_elements(venta.listaProductos)->>'codigoBarra'")
-      .addGroupBy("jsonb_array_elements(venta.listaProductos)->>'descripcion'")
+      .groupBy("lp->>'codigoBarra'")
+      .addGroupBy("lp->>'descripcion'")
       .orderBy('cantidad', 'DESC')
       .limit(10)
       .getRawMany();
@@ -499,9 +514,9 @@ export class VentasService {
     const ventasPorTipo = await this.ventaRepository
       .createQueryBuilder('venta')
       .select([
-        'COALESCE(venta.tipoCompra, \'LOCAL\') as tipoCompra',
+        "COALESCE(venta.tipoCompra, 'LOCAL') as tipoCompra",
         'COUNT(venta.id) as cantidadVentas',
-        'COALESCE(SUM(venta.total), 0) as montoTotal'
+        'COALESCE(SUM(venta.total), 0) as montoTotal',
       ])
       .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
       .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -513,7 +528,7 @@ export class VentasService {
     const ventasPorMetodoFormateado = ventasPorMetodo.reduce((acc, item) => {
       acc[item.metodoPago] = {
         cantidadVentas: parseInt(item.cantidadVentas),
-        montoTotal: parseFloat(item.montoTotal)
+        montoTotal: parseFloat(item.montoTotal),
       };
       return acc;
     }, {});
@@ -521,7 +536,7 @@ export class VentasService {
     const ventasPorTipoFormateado = ventasPorTipo.reduce((acc, item) => {
       acc[item.tipoCompra] = {
         cantidadVentas: parseInt(item.cantidadVentas),
-        montoTotal: parseFloat(item.montoTotal)
+        montoTotal: parseFloat(item.montoTotal),
       };
       return acc;
     }, {});
@@ -530,10 +545,12 @@ export class VentasService {
       codigoBarra: item.codigoBarra,
       descripcion: item.descripcion,
       cantidad: parseInt(item.cantidad),
-      monto: parseFloat(item.monto)
+      monto: parseFloat(item.monto),
     }));
 
-    this.logger.debug(`✓ Estadísticas calculadas: ${estadisticasBasicas.totalVentas} ventas, ${ventasPorMetodo.length} métodos de pago`);
+    this.logger.debug(
+      `✓ Estadísticas calculadas: ${estadisticasBasicas.totalVentas} ventas, ${ventasPorMetodo.length} métodos de pago`,
+    );
 
     return {
       // Estadísticas básicas
@@ -544,27 +561,27 @@ export class VentasService {
       totalRecargos: parseFloat(estadisticasBasicas.totalRecargos),
       totalPuntosOtorgados: parseInt(estadisticasBasicas.totalPuntosOtorgados),
       totalPuntosUsados: parseInt(estadisticasBasicas.totalPuntosUsados),
-      
+
       // Desgloses
       ventasPorMetodo: ventasPorMetodoFormateado,
       ventasPorTipo: ventasPorTipoFormateado,
       topProductos: topProductosFormateado,
-      
+
       // Metadatos
       fechaInicio,
       fechaFin,
-      fechaGeneracion: new Date()
+      fechaGeneracion: new Date(),
     };
   }
 
   private async generateTicketId(): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    
+
     // Contar ventas del día
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    
+
     const ventasDelDia = await this.ventaRepository.count({
       where: {
         fecha: Between(startOfDay, endOfDay),
@@ -580,7 +597,7 @@ export class VentasService {
    */
   private async _validarYProcesarProductos(
     listaProductos: any[],
-    queryRunner: any
+    queryRunner: any,
   ): Promise<ProductoValidado[]> {
     let subTotal = 0;
     const productosValidados: ProductoValidado[] = [];
@@ -590,15 +607,13 @@ export class VentasService {
 
       // Validar que el producto exista
       if (!producto) {
-        throw new NotFoundException(
-          `Producto con ID ${item.productoId} no encontrado`
-        );
+        throw new NotFoundException(`Producto con ID ${item.productoId} no encontrado`);
       }
 
       // Validar cantidad
       if (item.cantidad <= 0) {
         throw new BadRequestException(
-          `Cantidad debe ser mayor a 0 para ${producto.productoDescripcion}`
+          `Cantidad debe ser mayor a 0 para ${producto.productoDescripcion}`,
         );
       }
 
@@ -606,16 +621,14 @@ export class VentasService {
       if (producto.usaInventario && producto.cantidadActual < item.cantidad) {
         throw new BadRequestException(
           `Stock insuficiente para ${producto.productoDescripcion}. ` +
-          `Disponible: ${producto.cantidadActual}, solicitado: ${item.cantidad}`
+            `Disponible: ${producto.cantidadActual}, solicitado: ${item.cantidad}`,
         );
       }
 
       const precio = item.precioUnitario || producto.precio;
 
       if (precio <= 0) {
-        throw new BadRequestException(
-          `Precio inválido para ${producto.productoDescripcion}`
-        );
+        throw new BadRequestException(`Precio inválido para ${producto.productoDescripcion}`);
       }
 
       const subtotalItem = Math.round(precio * item.cantidad * 100) / 100; // Redondear a 2 decimales
@@ -648,15 +661,14 @@ export class VentasService {
     descuentoManual: number = 0,
     recargoExtra: number = 0,
     puntosUsados: number = 0,
-    cliente: Cliente | null
+    cliente: Cliente | null,
   ): ResumenVenta {
     // Subtotal
-    const subTotal = Math.round(
-      productosValidados.reduce((sum, p) => sum + p.subtotal, 0) * 100
-    ) / 100;
+    const subTotal =
+      Math.round(productosValidados.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
 
     // Descuento por puntos (1 punto = 0.10 soles)
-    const descuentoPorPuntos = Math.round(puntosUsados * 0.10 * 100) / 100;
+    const descuentoPorPuntos = Math.round(puntosUsados * 0.1 * 100) / 100;
 
     // Descuento total
     const descuentoTotal = Math.round((descuentoManual + descuentoPorPuntos) * 100) / 100;
@@ -667,7 +679,7 @@ export class VentasService {
     // Validar que total no sea negativo
     if (total < 0) {
       throw new BadRequestException(
-        `Descuento (S/ ${descuentoTotal.toFixed(2)}) no puede ser mayor al subtotal + recargo (S/ ${(subTotal + recargoExtra).toFixed(2)})`
+        `Descuento (S/ ${descuentoTotal.toFixed(2)}) no puede ser mayor al subtotal + recargo (S/ ${(subTotal + recargoExtra).toFixed(2)})`,
       );
     }
 
@@ -714,24 +726,26 @@ export class VentasService {
    */
   async getSalesCutoffReport(dateRangeDto: DateRangeDto): Promise<SalesCutoffDto> {
     // Convertir fechas string a Date
-    const fechaInicio = dateRangeDto.fechaInicio 
+    const fechaInicio = dateRangeDto.fechaInicio
       ? new Date(dateRangeDto.fechaInicio)
       : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    
+
     const fechaFin = dateRangeDto.fechaFin
       ? new Date(dateRangeDto.fechaFin)
       : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
 
-    this.logger.log(`📊 Generando corte de ventas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
+    this.logger.log(
+      `📊 Generando corte de ventas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`,
+    );
 
     try {
       // Obtener todas las ventas del período (incluyendo anuladas para estadísticas)
       const ventas = await this.ventaRepository.find({
         where: {
-          fecha: Between(fechaInicio, fechaFin)
+          fecha: Between(fechaInicio, fechaFin),
         },
         relations: ['cliente', 'pagos'],
-        order: { fecha: 'ASC' }
+        order: { fecha: 'ASC' },
       });
 
       // Filtrar ventas completadas para cálculos principales
@@ -753,7 +767,7 @@ export class VentasService {
         .select([
           'pago.metodoPago as metodoPago',
           'COUNT(DISTINCT venta.id) as cantidad',
-          'COALESCE(SUM(pago.monto), 0) as monto'
+          'COALESCE(SUM(pago.monto), 0) as monto',
         ])
         .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
         .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -767,7 +781,7 @@ export class VentasService {
       desgloseMetodosPagoRaw.forEach(item => {
         desgloseMetodosPago[item.metodoPago] = {
           cantidad: parseInt(item.cantidad),
-          monto: parseFloat(item.monto)
+          monto: parseFloat(item.monto),
         };
       });
 
@@ -785,20 +799,24 @@ export class VentasService {
       });
 
       // Top productos más vendidos
-      const productosVendidos: { [key: number]: { descripcion: string; cantidad: number; monto: number } } = {};
-      
+      const productosVendidos: {
+        [key: number]: { descripcion: string; cantidad: number; monto: number };
+      } = {};
+
       ventasCompletadas.forEach(venta => {
         venta.listaProductos.forEach((item: any) => {
           const productoId = item.productoId || item.id;
           if (!productosVendidos[productoId]) {
             productosVendidos[productoId] = {
-              descripcion: item.descripcion || item.productoDescripcion || 'Producto sin descripción',
+              descripcion:
+                item.descripcion || item.productoDescripcion || 'Producto sin descripción',
               cantidad: 0,
-              monto: 0
+              monto: 0,
             };
           }
           productosVendidos[productoId].cantidad += item.cantidad;
-          productosVendidos[productoId].monto += item.subtotal || (item.cantidad * item.precioUnitario);
+          productosVendidos[productoId].monto +=
+            item.subtotal || item.cantidad * item.precioUnitario;
         });
       });
 
@@ -807,14 +825,14 @@ export class VentasService {
           productoId: parseInt(productoId),
           descripcion: data.descripcion,
           cantidad: data.cantidad,
-          monto: data.monto
+          monto: data.monto,
         }))
         .sort((a, b) => b.cantidad - a.cantidad)
         .slice(0, 10);
 
       // Ventas por día
       const ventasPorDia: { [key: string]: { cantidad: number; monto: number } } = {};
-      
+
       ventasCompletadas.forEach(venta => {
         const fecha = venta.fecha.toISOString().split('T')[0]; // YYYY-MM-DD
         if (!ventasPorDia[fecha]) {
@@ -828,7 +846,7 @@ export class VentasService {
         .map(([fecha, data]) => ({
           fecha,
           cantidad: data.cantidad,
-          monto: data.monto
+          monto: data.monto,
         }))
         .sort((a, b) => a.fecha.localeCompare(b.fecha));
 
@@ -850,12 +868,13 @@ export class VentasService {
         topProductos,
         ventasPorDia: ventasPorDiaArray,
         ventasAnuladas: ventasAnuladasCount,
-        montoVentasAnuladas: Math.round(montoVentasAnuladas * 100) / 100
+        montoVentasAnuladas: Math.round(montoVentasAnuladas * 100) / 100,
       };
 
-      this.logger.log(`✅ Corte generado: ${numeroTransacciones} ventas, S/ ${totalVentas.toFixed(2)} total`);
+      this.logger.log(
+        `✅ Corte generado: ${numeroTransacciones} ventas, S/ ${totalVentas.toFixed(2)} total`,
+      );
       return resultado;
-
     } catch (error) {
       this.logger.error(`❌ Error generando corte de ventas: ${error.message}`);
       throw new InternalServerErrorException(`Error generando reporte: ${error.message}`);
@@ -867,31 +886,32 @@ export class VentasService {
    * Usa únicamente el formato normalizado metodosPageo
    */
   private _procesarMetodosPago(
-    createVentaDto: CreateVentaDto, 
-    totalVenta: number
+    createVentaDto: CreateVentaDto,
+    totalVenta: number,
   ): { metodoPago: MetodoPago; monto: number; referencia?: string; timestamp: Date }[] {
     const now = new Date();
-    
+
     // Validar que metodosPageo esté presente
     if (!createVentaDto.metodosPageo || createVentaDto.metodosPageo.length === 0) {
       throw new BadRequestException('Debe especificar al menos un método de pago');
     }
-    
+
     // Validar que la suma de montos sea igual al total
     const sumaMontos = createVentaDto.metodosPageo.reduce((sum, metodo) => sum + metodo.monto, 0);
     const diferencia = Math.abs(sumaMontos - totalVenta);
-    
-    if (diferencia > 0.01) { // Tolerancia de 1 centavo para errores de redondeo
+
+    if (diferencia > 0.01) {
+      // Tolerancia de 1 centavo para errores de redondeo
       throw new BadRequestException(
-        `La suma de métodos de pago (S/ ${sumaMontos.toFixed(2)}) debe ser igual al total (S/ ${totalVenta.toFixed(2)})`
+        `La suma de métodos de pago (S/ ${sumaMontos.toFixed(2)}) debe ser igual al total (S/ ${totalVenta.toFixed(2)})`,
       );
     }
-    
+
     return createVentaDto.metodosPageo.map(metodo => ({
       metodoPago: metodo.metodoPago,
       monto: metodo.monto,
       referencia: metodo.referencia,
-      timestamp: now
+      timestamp: now,
     }));
   }
 
@@ -903,7 +923,7 @@ export class VentasService {
     createVentaDto: CreateVentaDto,
     totalVenta: number,
     cajero: string,
-    queryRunner: any
+    queryRunner: any,
   ): Promise<CreateVentaPagoDto[]> {
     const pagosNormalizados: CreateVentaPagoDto[] = [];
     let secuencia = 1;
@@ -918,26 +938,24 @@ export class VentasService {
       pagosNormalizados.push({
         metodoPago: metodo.metodoPago,
         monto: metodo.monto,
-        referencia: metodo.referencia || null,
-        estado: 'COMPLETADO',
-        notas: null,
-        fechaRegistro: new Date(),
-        registradoPor: cajero,
-        secuencia: secuencia++,
+        referencia: metodo.referencia || undefined,
       });
     }
 
     // Validar que la suma de pagos coincida con el total
     const sumaPagos = pagosNormalizados.reduce((sum, pago) => sum + pago.monto, 0);
     const diferencia = Math.abs(sumaPagos - totalVenta);
-    
-    if (diferencia > 0.01) { // Tolerancia de 1 centavo para redondeo
+
+    if (diferencia > 0.01) {
+      // Tolerancia de 1 centavo para redondeo
       throw new BadRequestException(
-        `La suma de pagos (S/ ${sumaPagos.toFixed(2)}) no coincide con el total de la venta (S/ ${totalVenta.toFixed(2)})`
+        `La suma de pagos (S/ ${sumaPagos.toFixed(2)}) no coincide con el total de la venta (S/ ${totalVenta.toFixed(2)})`,
       );
     }
 
-    this.logger.debug(`✓ Pagos validados: ${pagosNormalizados.length} métodos, suma: S/ ${sumaPagos.toFixed(2)}`);
+    this.logger.debug(
+      `✓ Pagos validados: ${pagosNormalizados.length} métodos, suma: S/ ${sumaPagos.toFixed(2)}`,
+    );
     return pagosNormalizados;
   }
 
@@ -947,7 +965,7 @@ export class VentasService {
   private async _enviarNotificacionWhatsApp(
     cliente: Cliente,
     venta: Venta,
-    resumen: ResumenVenta
+    resumen: ResumenVenta,
   ): Promise<void> {
     try {
       this.logger.log(`📱 Enviando notificación WhatsApp a ${cliente.telefono}`);
@@ -956,22 +974,18 @@ export class VentasService {
         cliente.telefono,
         venta.total,
         venta.puntosOtorgados,
-        venta.ticketId
+        venta.ticketId,
       );
 
       if (resultado.success) {
         this.logger.log(
-          `✅ Notificación enviada a ${cliente.telefono} - Ticket: ${venta.ticketId}`
+          `✅ Notificación enviada a ${cliente.telefono} - Ticket: ${venta.ticketId}`,
         );
       } else {
-        this.logger.warn(
-          `⚠️ Error enviando WhatsApp: ${resultado.error}`
-        );
+        this.logger.warn(`⚠️ Error enviando WhatsApp: ${resultado.error}`);
       }
     } catch (error) {
-      this.logger.warn(
-        `⚠️ Excepción enviando WhatsApp: ${error.message}`
-      );
+      this.logger.warn(`⚠️ Excepción enviando WhatsApp: ${error.message}`);
     }
   }
 }
