@@ -470,13 +470,13 @@ export class VentasService {
       const estadisticasBasicas = await this.ventaRepository
         .createQueryBuilder('venta')
         .select([
-          'COUNT(venta.id) as totalVentas',
-          'COALESCE(SUM(venta.total), 0) as totalMonto',
-          'COALESCE(AVG(venta.total), 0) as promedioVenta',
-          'COALESCE(SUM(venta.descuento), 0) as totalDescuentos',
-          'COALESCE(SUM(venta.recargoExtra), 0) as totalRecargos',
-          'COALESCE(SUM(venta.puntosOtorgados), 0) as totalPuntosOtorgados',
-          'COALESCE(SUM(venta.puntosUsados), 0) as totalPuntosUsados',
+          'COUNT(venta.id)::int as totalVentas',
+          'COALESCE(SUM(venta.total), 0)::numeric as totalMonto',
+          'COALESCE(AVG(venta.total), 0)::numeric as promedioVenta',
+          'COALESCE(SUM(venta.descuento), 0)::numeric as totalDescuentos',
+          'COALESCE(SUM(venta.recargoExtra), 0)::numeric as totalRecargos',
+          'COALESCE(SUM(venta.puntosOtorgados), 0)::int as totalPuntosOtorgados',
+          'COALESCE(SUM(venta.puntosUsados), 0)::int as totalPuntosUsados',
         ])
         .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
         .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -493,12 +493,13 @@ export class VentasService {
       .innerJoin('pago.venta', 'venta')
       .select([
         'pago.metodoPago as metodoPago',
-        'COUNT(DISTINCT venta.id) as cantidadVentas',
-        'COALESCE(SUM(pago.monto), 0) as montoTotal',
+        'COUNT(DISTINCT venta.id)::int as cantidadVentas',
+        'COALESCE(SUM(pago.monto), 0)::numeric as montoTotal',
       ])
       .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
       .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
       .andWhere('pago.estado = :estadoPago', { estadoPago: 'COMPLETADO' })
+      .andWhere('pago.metodoPago IS NOT NULL')
       .groupBy('pago.metodoPago')
       .orderBy('montoTotal', 'DESC')
       .getRawMany();
@@ -525,8 +526,8 @@ export class VentasService {
       .createQueryBuilder('venta')
       .select([
         "COALESCE(venta.tipoCompra, 'LOCAL') as tipoCompra",
-        'COUNT(venta.id) as cantidadVentas',
-        'COALESCE(SUM(venta.total), 0) as montoTotal',
+        'COUNT(venta.id)::int as cantidadVentas',
+        'COALESCE(SUM(venta.total), 0)::numeric as montoTotal',
       ])
       .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
       .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -536,17 +537,19 @@ export class VentasService {
 
     // ===== FORMATEAR RESULTADOS =====
     const ventasPorMetodoFormateado = ventasPorMetodo.reduce((acc, item) => {
-      acc[item.metodoPago] = {
-        cantidadVentas: parseInt(item.cantidadVentas),
-        montoTotal: MoneyUtil.round(parseFloat(item.montoTotal)),
-      };
+      if (item.metodoPago && Object.values(MetodoPago).includes(item.metodoPago)) {
+        acc[item.metodoPago] = {
+          cantidadVentas: item.cantidadVentas || 0,
+          montoTotal: MoneyUtil.round(item.montoTotal || 0),
+        };
+      }
       return acc;
     }, {});
 
     const ventasPorTipoFormateado = ventasPorTipo.reduce((acc, item) => {
       acc[item.tipoCompra] = {
-        cantidadVentas: parseInt(item.cantidadVentas),
-        montoTotal: MoneyUtil.round(parseFloat(item.montoTotal)),
+        cantidadVentas: item.cantidadVentas || 0,
+        montoTotal: MoneyUtil.round(item.montoTotal || 0),
       };
       return acc;
     }, {});
@@ -563,14 +566,14 @@ export class VentasService {
     );
 
     return {
-      // Estadísticas básicas
-      totalVentas: parseInt(estadisticasBasicas.totalVentas),
-      totalMonto: MoneyUtil.round(parseFloat(estadisticasBasicas.totalMonto)),
-      promedioVenta: MoneyUtil.round(parseFloat(estadisticasBasicas.promedioVenta)),
-      totalDescuentos: MoneyUtil.round(parseFloat(estadisticasBasicas.totalDescuentos)),
-      totalRecargos: MoneyUtil.round(parseFloat(estadisticasBasicas.totalRecargos)),
-      totalPuntosOtorgados: parseInt(estadisticasBasicas.totalPuntosOtorgados),
-      totalPuntosUsados: parseInt(estadisticasBasicas.totalPuntosUsados),
+      // Estadísticas básicas - usar valores directos de la consulta con casting
+      totalVentas: estadisticasBasicas.totalVentas || 0,
+      totalMonto: MoneyUtil.round(estadisticasBasicas.totalMonto || 0),
+      promedioVenta: MoneyUtil.round(estadisticasBasicas.promedioVenta || 0),
+      totalDescuentos: MoneyUtil.round(estadisticasBasicas.totalDescuentos || 0),
+      totalRecargos: MoneyUtil.round(estadisticasBasicas.totalRecargos || 0),
+      totalPuntosOtorgados: estadisticasBasicas.totalPuntosOtorgados || 0,
+      totalPuntosUsados: estadisticasBasicas.totalPuntosUsados || 0,
 
       // Desgloses
       ventasPorMetodo: ventasPorMetodoFormateado,
@@ -779,8 +782,8 @@ export class VentasService {
         .innerJoin('pago.venta', 'venta')
         .select([
           'pago.metodoPago as metodoPago',
-          'COUNT(DISTINCT venta.id) as cantidad',
-          'COALESCE(SUM(pago.monto), 0) as monto',
+          'COUNT(DISTINCT venta.id)::int as cantidad',
+          'COALESCE(SUM(pago.monto), 0)::numeric as monto',
         ])
         .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
         .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -796,8 +799,8 @@ export class VentasService {
         // Solo procesar si el método de pago es válido según el enum
         if (item.metodoPago && Object.values(MetodoPago).includes(item.metodoPago)) {
           desgloseMetodosPago[item.metodoPago] = {
-            cantidad: parseInt(item.cantidad),
-            monto: MoneyUtil.round(parseFloat(item.monto)),
+            cantidad: item.cantidad || 0,
+            monto: MoneyUtil.round(item.monto || 0),
           };
         }
       });
