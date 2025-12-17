@@ -504,7 +504,7 @@ export class VentasService {
       .getRawMany();
 
     // ===== CONSULTA OPTIMIZADA: TOP PRODUCTOS VENDIDOS =====
-    // Usar subconsulta en lugar de LATERAL para mayor compatibilidad
+    // Usar el nombre correcto de columna: listaProductos (no lista_productos)
     const topProductos = await this.dataSource.query(`
       SELECT 
         producto->>'codigoBarra' AS "codigoBarra",
@@ -512,7 +512,7 @@ export class VentasService {
         SUM((producto->>'cantidad')::integer) AS "cantidad",
         SUM((producto->>'subtotal')::numeric) AS "monto"
       FROM ventas v,
-           jsonb_array_elements(v.lista_productos) AS producto
+           jsonb_array_elements(v."listaProductos") AS producto
       WHERE v.fecha BETWEEN $1 AND $2
         AND v.estado = $3
       GROUP BY producto->>'codigoBarra', producto->>'descripcion'
@@ -778,26 +778,28 @@ export class VentasService {
         .createQueryBuilder('pago')
         .innerJoin('pago.venta', 'venta')
         .select([
-          'COALESCE(pago.metodoPago, \'SIN_ESPECIFICAR\') as metodoPago',
+          'pago.metodoPago as metodoPago',
           'COUNT(DISTINCT venta.id) as cantidad',
           'COALESCE(SUM(pago.monto), 0) as monto',
         ])
         .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
         .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
         .andWhere('pago.estado = :estadoPago', { estadoPago: 'COMPLETADO' })
-        .andWhere('pago.metodoPago IS NOT NULL') // Filtrar pagos sin método especificado
+        .andWhere('pago.metodoPago IS NOT NULL') // Solo pagos con método especificado
         .groupBy('pago.metodoPago')
         .orderBy('monto', 'DESC')
         .getRawMany();
 
-      // Formatear desglose de métodos de pago
+      // Formatear desglose de métodos de pago (solo valores válidos del enum)
       const desgloseMetodosPago: { [key: string]: { cantidad: number; monto: number } } = {};
       desgloseMetodosPagoRaw.forEach(item => {
-        const metodoPago = item.metodoPago || 'SIN_ESPECIFICAR';
-        desgloseMetodosPago[metodoPago] = {
-          cantidad: parseInt(item.cantidad),
-          monto: MoneyUtil.round(parseFloat(item.monto)),
-        };
+        // Solo procesar si el método de pago es válido según el enum
+        if (item.metodoPago && Object.values(MetodoPago).includes(item.metodoPago)) {
+          desgloseMetodosPago[item.metodoPago] = {
+            cantidad: parseInt(item.cantidad),
+            monto: MoneyUtil.round(parseFloat(item.monto)),
+          };
+        }
       });
 
       // Nota: Código de compatibilidad temporal eliminado - ahora solo usa venta_pagos

@@ -15,13 +15,13 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@ne
 import { CajaService } from './caja.service';
 import { AbrirCajaDto } from './dto/abrir-caja.dto';
 import { CerrarCajaDto } from './dto/cerrar-caja.dto';
-import { CajaEstadisticasDto } from './dto/caja-estadisticas.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { DateRangeDto } from '../../common/dto/date-range.dto';
 
 @ApiTags('Caja')
 @Controller('caja')
@@ -87,9 +87,9 @@ export class CajaController {
   @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD HH:mm:ss)', required: false })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
   @ApiResponse({ status: 400, description: 'Parámetros de fecha inválidos' })
-  async getEstadisticas(@Query() cajaEstadisticasDto: CajaEstadisticasDto) {
+  async getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
     try {
-      const { fechaInicio, fechaFin } = cajaEstadisticasDto.getDateRange();
+      const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
       this.logger.log(`Obteniendo estadísticas de cajas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
       
       return await this.cajaService.getEstadisticasCajas(fechaInicio, fechaFin);
@@ -106,9 +106,9 @@ export class CajaController {
   @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD HH:mm:ss)', required: false })
   @ApiResponse({ status: 200, description: 'Cajas del rango obtenidas exitosamente' })
   @ApiResponse({ status: 400, description: 'Parámetros de fecha inválidos' })
-  async getCajasPorFecha(@Query() cajaEstadisticasDto: CajaEstadisticasDto) {
+  async getCajasPorFecha(@Query() dateRangeDto: DateRangeDto) {
     try {
-      const { fechaInicio, fechaFin } = cajaEstadisticasDto.getDateRange();
+      const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
       this.logger.log(`Obteniendo cajas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
       
       return await this.cajaService.getCajasPorFecha(fechaInicio, fechaFin);
