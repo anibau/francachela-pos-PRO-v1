@@ -540,4 +540,20 @@ export class ExcelService {
       fgColor: { argb: 'FFFF6347' }
     };
   }
+
+  async exportVentaPagos(exportDto: ExportVentasDto): Promise<Buffer> {
+    try {
+      this.logger.log('Generando reporte Excel de Venta Pagos');
+      const workbook = new ExcelJS.Workbook();
+      
+      await this.createVentaPagosSheet(workbook, exportDto);
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      this.logger.log('Reporte Excel de Venta Pagos generado exitosamente');
+      return buffer as Buffer;
+    } catch (error) {
+      this.logger.error('Error generando reporte Excel de Venta Pagos:', error);
+      throw new InternalServerErrorException('Error al generar el reporte Excel de Venta Pagos');
+    }
+  }
 }

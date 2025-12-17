@@ -46,6 +46,28 @@ export class ExcelController {
     res.end(buffer);
   }
 
+  @Get('export-venta-pagos')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @ApiOperation({ summary: 'Exportar pagos de ventas a Excel' })
+  @ApiQuery({ name: 'fechaInicio', required: false, description: 'Fecha inicio (YYYY-MM-DD HH:mm:ss)' })
+  @ApiQuery({ name: 'fechaFin', required: false, description: 'Fecha fin (YYYY-MM-DD HH:mm:ss)' })
+  @ApiResponse({ status: 200, description: 'Archivo Excel de pagos generado exitosamente' })
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  async exportVentaPagos(
+    @Query() exportDto: ExportVentasDto,
+    @Res() res: Response
+  ) {
+    const buffer = await this.excelService.exportVentaPagos(exportDto);
+    
+    const filename = `venta_pagos_${new Date().toISOString().split('T')[0]}.xlsx`;
+    res.set({
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length.toString(),
+    });
+    
+    res.end(buffer);
+  }
+
   @Get('export-productos')
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Exportar productos a Excel' })
