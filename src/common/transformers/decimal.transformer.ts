@@ -3,6 +3,7 @@ import { ValueTransformer } from 'typeorm';
 /**
  * Transformador para campos decimales que asegura la conversión correcta
  * entre la base de datos (string) y la aplicación (number)
+ * Incluye redondeo correcto para evitar problemas de punto flotante
  */
 export class DecimalTransformer implements ValueTransformer {
   /**
@@ -12,7 +13,9 @@ export class DecimalTransformer implements ValueTransformer {
     if (value === null || value === undefined) {
       return null;
     }
-    return value.toString();
+    // Redondear a 2 decimales antes de enviar a BD
+    const rounded = Math.round(value * 100) / 100;
+    return rounded.toString();
   }
 
   /**
@@ -31,7 +34,8 @@ export class DecimalTransformer implements ValueTransformer {
       return 0;
     }
     
-    return numericValue;
+    // Redondear a 2 decimales para asegurar consistencia
+    return Math.round(numericValue * 100) / 100;
   }
 }
 

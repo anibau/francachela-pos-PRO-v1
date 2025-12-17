@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, Between } from 'typeorm';
 import { Cliente } from '../../entities/cliente.entity';
@@ -27,17 +27,27 @@ export class ClientesService {
     // Generar código corto único
     const codigoCorto = await this.generateCodigoCorto();
 
-    const cliente = this.clienteRepository.create({
-      ...createClienteDto,
-      codigoCorto,
-    });
+    try {
+      const cliente = this.clienteRepository.create({
+        ...createClienteDto,
+        codigoCorto,
+      });
 
-    const clienteGuardado = await this.clienteRepository.save(cliente);
+      const clienteGuardado = await this.clienteRepository.save(cliente);
 
-    // Nota: El envío del mensaje de bienvenida se maneja desde el controlador o eventos
-    // para evitar dependencia circular entre módulos
+      // Nota: El envío del mensaje de bienvenida se maneja desde el controlador o eventos
+      // para evitar dependencia circular entre módulos
 
-    return clienteGuardado;
+      return clienteGuardado;
+    } catch (error) {
+      // Manejar errores de secuencia duplicada
+      if (error.code === '23505' || error.message?.includes('duplicate key')) {
+        throw new BadRequestException(
+          'Error al generar ID del cliente. Por favor ejecute la sincronización de secuencias (POST /admin/sync-sequences) y reintente.'
+        );
+      }
+      throw error;
+    }
   }
 
   async findAll(): Promise<Cliente[]> {

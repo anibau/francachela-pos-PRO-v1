@@ -3,6 +3,7 @@ import { Cliente } from './cliente.entity';
 import { VentaPago } from './venta-pago.entity';
 import { EstadoVenta, TipoCompra, MetodoPago } from '../common/enums';
 import { decimalTransformer } from '../common/transformers/decimal.transformer';
+import { MoneyUtil } from '../common/utils/money.util';
 
 @Entity('ventas')
 export class Venta {
@@ -118,7 +119,8 @@ export class Venta {
 
   /**
    * Getter que verifica si la suma de pagos coincide con el total
-   * Útil para validaciones de integridad financiera
+   * Utiliza tolerancia de 5 céntimos para permitir variaciones de redondeo
+   * Más apropiado para un sistema POS
    */
   get esPagoCompleto(): boolean {
     if (!this.pagos || this.pagos.length === 0) return false;
@@ -127,7 +129,7 @@ export class Venta {
       .filter(p => p.estado === 'COMPLETADO')
       .reduce((sum, pago) => sum + pago.monto, 0);
     
-    // Tolerancia de 0.01 para diferencias de redondeo
-    return Math.abs(sumaPagos - this.total) <= 0.01;
+    // Usar MoneyUtil para validación con tolerancia POS (5 céntimos)
+    return MoneyUtil.isEqual(sumaPagos, this.total);
   }
 }
