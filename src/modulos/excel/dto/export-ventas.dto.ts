@@ -7,7 +7,8 @@ export enum TipoReporte {
   PRODUCTOS = 'PRODUCTOS',
   CLIENTES = 'CLIENTES',
   INVENTARIO = 'INVENTARIO',
-  DELIVERY = 'DELIVERY'
+  DELIVERY = 'DELIVERY',
+  VENTA_PAGOS = 'VENTA_PAGOS'
 }
 
 export class ExportVentasDto {
@@ -35,4 +36,3 @@ export class ExportVentasDto {
   @Transform(({ value }) => value === 'true' || value === true)
   incluirDetalles?: boolean;
 }
-
