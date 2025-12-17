@@ -504,22 +504,21 @@ export class VentasService {
       .getRawMany();
 
     // ===== CONSULTA OPTIMIZADA: TOP PRODUCTOS VENDIDOS =====
-    const topProductos = await this.ventaRepository
-      .createQueryBuilder('venta')
-      .leftJoin('LATERAL jsonb_array_elements(venta.listaProductos)', 'lp', 'true')
-      .select([
-        "lp->>'codigoBarra' AS codigoBarra",
-        "lp->>'descripcion' AS descripcion",
-        "SUM((lp->>'cantidad')::integer) AS cantidad",
-        "SUM((lp->>'subtotal')::numeric) AS monto",
-      ])
-      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
-      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
-      .groupBy("lp->>'codigoBarra'")
-      .addGroupBy("lp->>'descripcion'")
-      .orderBy('cantidad', 'DESC')
-      .limit(10)
-      .getRawMany();
+    // Usar subconsulta en lugar de LATERAL para mayor compatibilidad
+    const topProductos = await this.dataSource.query(`
+      SELECT 
+        producto->>'codigoBarra' AS "codigoBarra",
+        producto->>'descripcion' AS "descripcion",
+        SUM((producto->>'cantidad')::integer) AS "cantidad",
+        SUM((producto->>'subtotal')::numeric) AS "monto"
+      FROM ventas v,
+           jsonb_array_elements(v.lista_productos) AS producto
+      WHERE v.fecha BETWEEN $1 AND $2
+        AND v.estado = $3
+      GROUP BY producto->>'codigoBarra', producto->>'descripcion'
+      ORDER BY SUM((producto->>'cantidad')::integer) DESC
+      LIMIT 10
+    `, [fechaInicio, fechaFin, EstadoVenta.COMPLETADO]);
 
     // ===== CONSULTA OPTIMIZADA: VENTAS POR TIPO DE COMPRA =====
     const ventasPorTipo = await this.ventaRepository
@@ -779,13 +778,14 @@ export class VentasService {
         .createQueryBuilder('pago')
         .innerJoin('pago.venta', 'venta')
         .select([
-          'pago.metodoPago as metodoPago',
+          'COALESCE(pago.metodoPago, \'SIN_ESPECIFICAR\') as metodoPago',
           'COUNT(DISTINCT venta.id) as cantidad',
           'COALESCE(SUM(pago.monto), 0) as monto',
         ])
         .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
         .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
         .andWhere('pago.estado = :estadoPago', { estadoPago: 'COMPLETADO' })
+        .andWhere('pago.metodoPago IS NOT NULL') // Filtrar pagos sin método especificado
         .groupBy('pago.metodoPago')
         .orderBy('monto', 'DESC')
         .getRawMany();
@@ -793,9 +793,10 @@ export class VentasService {
       // Formatear desglose de métodos de pago
       const desgloseMetodosPago: { [key: string]: { cantidad: number; monto: number } } = {};
       desgloseMetodosPagoRaw.forEach(item => {
-        desgloseMetodosPago[item.metodoPago] = {
+        const metodoPago = item.metodoPago || 'SIN_ESPECIFICAR';
+        desgloseMetodosPago[metodoPago] = {
           cantidad: parseInt(item.cantidad),
-          monto: parseFloat(item.monto),
+          monto: MoneyUtil.round(parseFloat(item.monto)),
         };
       });
 
