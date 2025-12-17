@@ -18,6 +18,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 import { ProductosService } from '../productos/productos.service';
+import { MoneyUtil } from '../../common/utils/money.util';
 import { ClientesService } from '../clientes/clientes.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
@@ -456,7 +457,7 @@ export class VentasService {
     });
 
     const totalVentas = ventas.length;
-    const totalMonto = ventas.reduce((sum, venta) => sum + venta.total, 0);
+    const totalMonto = MoneyUtil.sum(ventas.map(v => v.total));
 
     return { ventas, totalVentas, totalMonto };
   }
@@ -530,7 +531,7 @@ export class VentasService {
     const ventasPorMetodoFormateado = ventasPorMetodo.reduce((acc, item) => {
       acc[item.metodoPago] = {
         cantidadVentas: parseInt(item.cantidadVentas),
-        montoTotal: parseFloat(item.montoTotal),
+        montoTotal: MoneyUtil.round(parseFloat(item.montoTotal)),
       };
       return acc;
     }, {});
@@ -538,7 +539,7 @@ export class VentasService {
     const ventasPorTipoFormateado = ventasPorTipo.reduce((acc, item) => {
       acc[item.tipoCompra] = {
         cantidadVentas: parseInt(item.cantidadVentas),
-        montoTotal: parseFloat(item.montoTotal),
+        montoTotal: MoneyUtil.round(parseFloat(item.montoTotal)),
       };
       return acc;
     }, {});
@@ -547,7 +548,7 @@ export class VentasService {
       codigoBarra: item.codigoBarra,
       descripcion: item.descripcion,
       cantidad: parseInt(item.cantidad),
-      monto: parseFloat(item.monto),
+      monto: MoneyUtil.round(parseFloat(item.monto)),
     }));
 
     this.logger.debug(
@@ -557,10 +558,10 @@ export class VentasService {
     return {
       // Estadísticas básicas
       totalVentas: parseInt(estadisticasBasicas.totalVentas),
-      totalMonto: parseFloat(estadisticasBasicas.totalMonto),
-      promedioVenta: parseFloat(estadisticasBasicas.promedioVenta),
-      totalDescuentos: parseFloat(estadisticasBasicas.totalDescuentos),
-      totalRecargos: parseFloat(estadisticasBasicas.totalRecargos),
+      totalMonto: MoneyUtil.round(parseFloat(estadisticasBasicas.totalMonto)),
+      promedioVenta: MoneyUtil.round(parseFloat(estadisticasBasicas.promedioVenta)),
+      totalDescuentos: MoneyUtil.round(parseFloat(estadisticasBasicas.totalDescuentos)),
+      totalRecargos: MoneyUtil.round(parseFloat(estadisticasBasicas.totalRecargos)),
       totalPuntosOtorgados: parseInt(estadisticasBasicas.totalPuntosOtorgados),
       totalPuntosUsados: parseInt(estadisticasBasicas.totalPuntosUsados),
 
@@ -633,7 +634,7 @@ export class VentasService {
         throw new BadRequestException(`Precio inválido para ${producto.productoDescripcion}`);
       }
 
-      const subtotalItem = Math.round(precio * item.cantidad * 100) / 100; // Redondear a 2 decimales
+      const subtotalItem = MoneyUtil.multiply(item.cantidad, precio);
 
       productosValidados.push({
         productoId: producto.id,
@@ -665,23 +666,22 @@ export class VentasService {
     puntosUsados: number = 0,
     cliente: Cliente | null,
   ): ResumenVenta {
-    // Subtotal
-    const subTotal =
-      Math.round(productosValidados.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+    // Subtotal con redondeo correcto
+    const subTotal = MoneyUtil.sum(productosValidados.map(p => p.subtotal));
 
     // Descuento por puntos (1 punto = 0.10 soles)
-    const descuentoPorPuntos = Math.round(puntosUsados * 0.1 * 100) / 100;
+    const descuentoPorPuntos = MoneyUtil.round(puntosUsados * 0.1);
 
     // Descuento total
-    const descuentoTotal = Math.round((descuentoManual + descuentoPorPuntos) * 100) / 100;
+    const descuentoTotal = MoneyUtil.round(descuentoManual + descuentoPorPuntos);
 
-    // Total con recargo extra
-    const total = Math.max(0, Math.round((subTotal - descuentoTotal + recargoExtra) * 100) / 100);
+    // Total con recargo extra - APLICAR MONEYUTIL AQUÍ
+    const total = MoneyUtil.round(MoneyUtil.round(subTotal - descuentoTotal) + recargoExtra);
 
     // Validar que total no sea negativo
     if (total < 0) {
       throw new BadRequestException(
-        `Descuento (S/ ${descuentoTotal.toFixed(2)}) no puede ser mayor al subtotal + recargo (S/ ${(subTotal + recargoExtra).toFixed(2)})`,
+        `Descuento (S/ ${descuentoTotal.toFixed(2)}) no puede ser mayor al subtotal + recargo (S/ ${MoneyUtil.round(subTotal + recargoExtra).toFixed(2)})`,
       );
     }
 
@@ -859,10 +859,10 @@ export class VentasService {
       const resultado: SalesCutoffDto = {
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,
-        totalVentas: Math.round(totalVentas * 100) / 100,
+        totalVentas: MoneyUtil.round(totalVentas),
         numeroTransacciones,
-        ticketPromedio: Math.round(ticketPromedio * 100) / 100,
-        totalDescuentos: Math.round(totalDescuentos * 100) / 100,
+        ticketPromedio: MoneyUtil.round(ticketPromedio),
+        totalDescuentos: MoneyUtil.round(totalDescuentos),
         puntosOtorgados,
         puntosCanjeados,
         desgloseMetodosPago,
@@ -870,7 +870,7 @@ export class VentasService {
         topProductos,
         ventasPorDia: ventasPorDiaArray,
         ventasAnuladas: ventasAnuladasCount,
-        montoVentasAnuladas: Math.round(montoVentasAnuladas * 100) / 100,
+        montoVentasAnuladas: MoneyUtil.round(montoVentasAnuladas),
       };
 
       this.logger.log(
@@ -899,13 +899,13 @@ export class VentasService {
     }
 
     // Validar que la suma de montos sea igual al total
-    const sumaMontos = createVentaDto.metodosPageo.reduce((sum, metodo) => sum + metodo.monto, 0);
-    const diferencia = Math.abs(sumaMontos - totalVenta);
-
-    if (diferencia > 0.01) {
-      // Tolerancia de 1 centavo para errores de redondeo
+    const sumaMontos = MoneyUtil.sum(createVentaDto.metodosPageo.map(m => m.monto));
+    
+    const validacion = MoneyUtil.validatePayment(sumaMontos, totalVenta);
+    
+    if (!validacion.isValid) {
       throw new BadRequestException(
-        `La suma de métodos de pago (S/ ${sumaMontos.toFixed(2)}) debe ser igual al total (S/ ${totalVenta.toFixed(2)})`,
+        `${validacion.mensaje}. Total venta: S/ ${totalVenta.toFixed(2)}, Suma de métodos: S/ ${sumaMontos.toFixed(2)}`
       );
     }
 
@@ -945,18 +945,19 @@ export class VentasService {
     }
 
     // Validar que la suma de pagos coincida con el total
-    const sumaPagos = pagosNormalizados.reduce((sum, pago) => sum + pago.monto, 0);
-    const diferencia = Math.abs(sumaPagos - totalVenta);
-
-    if (diferencia > 0.01) {
-      // Tolerancia de 1 centavo para redondeo
+    const sumaPagos = MoneyUtil.sum(pagosNormalizados.map(p => p.monto));
+    
+    const validacion = MoneyUtil.validatePayment(sumaPagos, totalVenta);
+    
+    if (!validacion.isValid) {
+      // Pago insuficiente o excesivo fuera de tolerancia
       throw new BadRequestException(
-        `La suma de pagos (S/ ${sumaPagos.toFixed(2)}) no coincide con el total de la venta (S/ ${totalVenta.toFixed(2)})`,
+        `${validacion.mensaje}. Total venta: S/ ${totalVenta.toFixed(2)}, Pagado: S/ ${sumaPagos.toFixed(2)}`
       );
     }
 
     this.logger.debug(
-      `✓ Pagos validados: ${pagosNormalizados.length} métodos, suma: S/ ${sumaPagos.toFixed(2)}`,
+      `✓ Pagos validados: ${pagosNormalizados.length} métodos, suma: S/ ${sumaPagos.toFixed(2)}, ${validacion.mensaje}`
     );
     return pagosNormalizados;
   }
