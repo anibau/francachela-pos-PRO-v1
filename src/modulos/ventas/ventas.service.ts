@@ -463,21 +463,29 @@ export class VentasService {
   }
 
   async getEstadisticasVentas(fechaInicio: Date, fechaFin: Date): Promise<any> {
-    // ===== CONSULTA OPTIMIZADA: ESTADÍSTICAS BÁSICAS =====
-    const estadisticasBasicas = await this.ventaRepository
-      .createQueryBuilder('venta')
-      .select([
-        'COUNT(venta.id) as totalVentas',
-        'COALESCE(SUM(venta.total), 0) as totalMonto',
-        'COALESCE(AVG(venta.total), 0) as promedioVenta',
-        'COALESCE(SUM(venta.descuento), 0) as totalDescuentos',
-        'COALESCE(SUM(venta.recargoExtra), 0) as totalRecargos',
-        'COALESCE(SUM(venta.puntosOtorgados), 0) as totalPuntosOtorgados',
-        'COALESCE(SUM(venta.puntosUsados), 0) as totalPuntosUsados',
-      ])
-      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
-      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
-      .getRawOne();
+    try {
+      this.logger.debug(`📊 Obteniendo estadísticas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
+
+      // ===== CONSULTA OPTIMIZADA: ESTADÍSTICAS BÁSICAS =====
+      const estadisticasBasicas = await this.ventaRepository
+        .createQueryBuilder('venta')
+        .select([
+          'COUNT(venta.id) as totalVentas',
+          'COALESCE(SUM(venta.total), 0) as totalMonto',
+          'COALESCE(AVG(venta.total), 0) as promedioVenta',
+          'COALESCE(SUM(venta.descuento), 0) as totalDescuentos',
+          'COALESCE(SUM(venta.recargoExtra), 0) as totalRecargos',
+          'COALESCE(SUM(venta.puntosOtorgados), 0) as totalPuntosOtorgados',
+          'COALESCE(SUM(venta.puntosUsados), 0) as totalPuntosUsados',
+        ])
+        .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+        .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+        .getRawOne();
+
+      if (!estadisticasBasicas) {
+        this.logger.warn('⚠️ No se obtuvieron estadísticas básicas');
+        throw new InternalServerErrorException('Error al obtener estadísticas básicas');
+      }
 
     // ===== CONSULTA OPTIMIZADA: DESGLOSE POR MÉTODOS DE PAGO =====
     const ventasPorMetodo = await this.ventaPagoRepository
@@ -575,6 +583,10 @@ export class VentasService {
       fechaFin,
       fechaGeneracion: new Date(),
     };
+    } catch (error) {
+      this.logger.error(`❌ Error al obtener estadísticas de ventas: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Error al obtener estadísticas de ventas: ${error.message}`);
+    }
   }
 
   private async generateTicketId(): Promise<string> {
