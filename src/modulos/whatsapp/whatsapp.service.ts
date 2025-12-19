@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, NotFoundException, BadRequestException } from '@nestjs/common';
 import makeWASocket, { 
   ConnectionState, 
   DisconnectReason, 
@@ -12,6 +12,9 @@ import { SendMessageDto } from './dto/send-message.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import QRCode from 'qrcode-terminal';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Cliente } from 'src/entities';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class WhatsappService implements OnModuleInit, OnModuleDestroy {
@@ -24,6 +27,11 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  constructor(
+     @InjectRepository(Cliente)
+        private clienteRepository: Repository<Cliente>,
+  ) {}
+  
 
   async onModuleInit() {
     try {
@@ -442,6 +450,34 @@ ${productosTexto}
 
     return this.sendMessage({ phone, message });
   }
+
+  async sendClientInfoByClientDni(
+  dni: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+
+  const cliente = await this.clienteRepository.findOne({
+    where: { dni }
+    
+  });
+
+  if (!cliente) {
+    throw new NotFoundException('Cliente no encontrado');
+  }
+
+  if (!cliente.telefono) {
+    throw new BadRequestException('El cliente no tiene teléfono registrado');
+  }
+
+
+  return this.sendClientInfoMessage(
+    cliente.telefono,
+    cliente.nombres,
+    cliente.apellidos,
+    cliente.codigoCorto,
+    cliente.puntosAcumulados ?? 0
+  );
+}
+
 
   async sendBirthdayMessage(
     phone: string,

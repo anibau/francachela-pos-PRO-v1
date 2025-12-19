@@ -1,14 +1,16 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Body, 
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
   UseGuards,
   Delete,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { WhatsappService } from './whatsapp.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -24,7 +26,7 @@ import { ClientesService } from '../clientes/clientes.service';
 export class WhatsappController {
   constructor(
     private readonly whatsappService: WhatsappService,
-    private readonly clientesService: ClientesService
+    private readonly clientesService: ClientesService,
   ) {}
 
   @Post('send')
@@ -40,17 +42,14 @@ export class WhatsappController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Enviar notificación de venta' })
   @ApiResponse({ status: 201, description: 'Notificación enviada exitosamente' })
-  sendVentaNotification(@Body() body: {
-    phone: string;
-    total: number;
-    puntosGanados: number;
-    ventaId: string;
-  }) {
+  sendVentaNotification(
+    @Body() body: { phone: string; total: number; puntosGanados: number; ventaId: string },
+  ) {
     return this.whatsappService.sendVentaNotification(
       body.phone,
       body.total,
       body.puntosGanados,
-      body.ventaId
+      body.ventaId,
     );
   }
 
@@ -58,17 +57,14 @@ export class WhatsappController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Enviar notificación de combo' })
   @ApiResponse({ status: 201, description: 'Notificación de combo enviada' })
-  sendComboNotification(@Body() body: {
-    phone: string;
-    comboNombre: string;
-    ahorro: number;
-    total: number;
-  }) {
+  sendComboNotification(
+    @Body() body: { phone: string; comboNombre: string; ahorro: number; total: number },
+  ) {
     return this.whatsappService.sendComboNotification(
       body.phone,
       body.comboNombre,
       body.ahorro,
-      body.total
+      body.total,
     );
   }
 
@@ -76,17 +72,14 @@ export class WhatsappController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Enviar notificación de delivery' })
   @ApiResponse({ status: 201, description: 'Notificación de delivery enviada' })
-  sendDeliveryNotification(@Body() body: {
-    phone: string;
-    direccion: string;
-    repartidor: string;
-    tiempoEstimado?: string;
-  }) {
+  sendDeliveryNotification(
+    @Body() body: { phone: string; direccion: string; repartidor: string; tiempoEstimado?: string },
+  ) {
     return this.whatsappService.sendDeliveryNotification(
       body.phone,
       body.direccion,
       body.repartidor,
-      body.tiempoEstimado
+      body.tiempoEstimado,
     );
   }
 
@@ -94,32 +87,47 @@ export class WhatsappController {
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Enviar alerta de stock bajo' })
   @ApiResponse({ status: 201, description: 'Alerta enviada exitosamente' })
-  sendLowStockAlert(@Body() body: {
-    adminPhone: string;
-    productos: Array<{ nombre: string; stock: number; minimo: number }>;
-  }) {
-    return this.whatsappService.sendLowStockAlert(
-      body.adminPhone,
-      body.productos
-    );
+  sendLowStockAlert(
+    @Body()
+    body: {
+      adminPhone: string;
+      productos: Array<{ nombre: string; stock: number; minimo: number }>;
+    },
+  ) {
+    return this.whatsappService.sendLowStockAlert(body.adminPhone, body.productos);
   }
 
   @Post('send-welcome')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Enviar mensaje de bienvenida a nuevo cliente' })
   @ApiResponse({ status: 201, description: 'Mensaje de bienvenida enviado exitosamente' })
-  sendWelcomeMessage(@Body() body: {
-    phone: string;
-    nombres: string;
-    apellidos: string;
-    codigoCorto: string;
-  }) {
+  sendWelcomeMessage(
+    @Body() body: { phone: string; nombres: string; apellidos: string; codigoCorto: string },
+  ) {
     return this.whatsappService.sendWelcomeMessage(
       body.phone,
       body.nombres,
       body.apellidos,
-      body.codigoCorto
+      body.codigoCorto,
     );
+  }
+
+  @Post('send-client-info/:dni')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @ApiOperation({
+    summary: 'Enviar información de cuenta del cliente por WhatsApp usando DNI',
+  })
+  @ApiParam({
+    name: 'dni',
+    description: 'DNI del cliente',
+    type: String,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Información de cuenta enviada exitosamente',
+  })
+  sendClientInfoMessage(@Param('dni') dni: string) {
+    return this.whatsappService.sendClientInfoByClientDni(dni);
   }
 
   /**
@@ -131,12 +139,12 @@ export class WhatsappController {
   @Post('birthday')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Enviar mensajes de cumpleaños',
-    description: 'Envía mensajes de felicitación a todos los clientes que cumplen años hoy'
+    description: 'Envía mensajes de felicitación a todos los clientes que cumplen años hoy',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Mensajes de cumpleaños enviados exitosamente',
     schema: {
       type: 'object',
@@ -155,19 +163,19 @@ export class WhatsappController {
               telefono: { type: 'string', example: '987654321' },
               edad: { type: 'number', example: 25 },
               enviado: { type: 'boolean', example: true },
-              error: { type: 'string', example: null }
-            }
-          }
-        }
-      }
-    }
+              error: { type: 'string', example: null },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 500, description: 'Error interno del servidor' })
   async sendBirthdayMessages() {
     try {
       // Obtener clientes que cumplen años hoy
       const cumpleaneros = await this.clientesService.findCumpleaneros();
-      
+
       if (cumpleaneros.length === 0) {
         return {
           success: true,
@@ -175,7 +183,7 @@ export class WhatsappController {
           mensajesEnviados: 0,
           errores: 0,
           detalles: [],
-          mensaje: 'No hay clientes que cumplan años hoy'
+          mensaje: 'No hay clientes que cumplan años hoy',
         };
       }
 
@@ -198,7 +206,7 @@ export class WhatsappController {
           telefono: cliente.telefono,
           edad: cliente.edad,
           enviado: false,
-          error: null as string | null
+          error: null as string | null,
         };
 
         try {
@@ -214,7 +222,7 @@ export class WhatsappController {
           const respuesta = await this.whatsappService.sendBirthdayMessage(
             cliente.telefono,
             cliente.nombres,
-            cliente.edad || 0
+            cliente.edad || 0,
           );
 
           if (respuesta.success) {
@@ -224,7 +232,6 @@ export class WhatsappController {
             resultado.error = respuesta.error || 'Error desconocido';
             errores++;
           }
-
         } catch (error) {
           resultado.error = error.message || 'Error enviando mensaje';
           errores++;
@@ -238,9 +245,8 @@ export class WhatsappController {
         clientesEncontrados: cumpleaneros.length,
         mensajesEnviados,
         errores,
-        detalles: resultados
+        detalles: resultados,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -248,7 +254,7 @@ export class WhatsappController {
         clientesEncontrados: 0,
         mensajesEnviados: 0,
         errores: 1,
-        detalles: []
+        detalles: [],
       };
     }
   }

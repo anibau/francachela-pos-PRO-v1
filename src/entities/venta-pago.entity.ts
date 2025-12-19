@@ -83,12 +83,11 @@ export class VentaPago {
    */
   @Column({
     type: 'enum',
-    enum: ['PENDIENTE', 'COMPLETADO', 'RECHAZADO'],
+    enum: ['PENDIENTE', 'COMPLETADO', 'RECHAZADO', 'ANULADO'],
     default: 'COMPLETADO',
     comment: 'Estado del pago individual'
   })
-  estado: 'PENDIENTE' | 'COMPLETADO' | 'RECHAZADO';
-
+  estado: 'PENDIENTE' | 'COMPLETADO' | 'RECHAZADO' | 'ANULADO';
   /**
    * Notas adicionales del pago
    * Para información específica del método de pago

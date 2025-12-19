@@ -373,19 +373,32 @@ export class VentasService {
     };
   }
 
-  async anularVenta(id: number, cajero: string): Promise<Venta> {
-    const venta = await this.findById(id);
+async anularVenta(id: number, cajero: string): Promise<Venta> {
+  return this.dataSource.transaction<Venta>(async manager => {
+    const venta = await manager.findOne(Venta, {
+      where: { id },
+      relations: ['cliente', 'pagos'],
+    });
+
+    if (!venta) {
+      throw new NotFoundException('Venta no encontrada');
+    }
 
     if (venta.estado === EstadoVenta.ANULADO) {
       throw new BadRequestException('La venta ya está anulada');
     }
 
-    // Devolver stock de productos
+    // 1️⃣ Devolver stock
     for (const item of venta.listaProductos) {
-      await this.productosService.devolverStock(item.codigoBarra, item.cantidad, cajero, venta.id);
+      await this.productosService.devolverStock(
+        item.codigoBarra,
+        item.cantidad,
+        cajero,
+        venta.id,
+      );
     }
 
-    // Revertir puntos del cliente
+    // 2️⃣ Revertir puntos
     if (venta.cliente) {
       if (venta.puntosOtorgados > 0) {
         await this.clientesService.canjearPuntos(
@@ -406,41 +419,53 @@ export class VentasService {
       }
     }
 
-    await this.ventaRepository.update(id, { estado: EstadoVenta.ANULADO });
-    const ventaAnulada = await this.findById(id);
+    // 3️⃣ Anular pagos
+    await manager.update(
+      VentaPago,
+      { venta: { id } },
+      { estado: 'ANULADO' },
+    );
 
-    // Enviar notificación de anulación por WhatsApp si el cliente tiene teléfono
-    if (venta.cliente && venta.cliente.telefono) {
+    // 4️⃣ Anular venta
+    await manager.update(Venta, id, {
+      estado: EstadoVenta.ANULADO,
+    });
+
+    // 5️⃣ Retornar venta anulada (SIEMPRE existe)
+    const ventaAnulada = await manager.findOne(Venta, {
+      where: { id },
+      relations: ['cliente', 'pagos'],
+    });
+
+    if (!ventaAnulada) {
+      // Esto casi nunca ocurrirá, pero deja feliz a TS y a producción
+      throw new InternalServerErrorException('Error al obtener la venta anulada');
+    }
+
+    // 6️⃣ WhatsApp (fuera de lógica crítica)
+    if (ventaAnulada.cliente?.telefono) {
       try {
-        this.logger.log(
-          `📱 Enviando notificación de anulación WhatsApp a ${venta.cliente.telefono}`,
-        );
-
         const mensaje =
           `⚠️ Tu venta ha sido anulada\n\n` +
-          `🎫 Ticket: ${venta.ticketId}\n` +
-          `💰 Monto: S/ ${venta.total.toFixed(2)}\n` +
-          `⭐ Puntos revertidos: ${venta.puntosOtorgados}\n\n` +
-          `Para más información, contacta a Francachela. 📞`;
+          `🎫 Ticket: ${ventaAnulada.ticketId}\n` +
+          `💰 Monto: S/ ${ventaAnulada.total.toFixed(2)}\n` +
+          `⭐ Puntos revertidos: ${ventaAnulada.puntosOtorgados}\n`;
 
-        const resultado = await this.whatsappService.sendMessage({
-          phone: venta.cliente.telefono,
+        await this.whatsappService.sendMessage({
+          phone: ventaAnulada.cliente.telefono,
           message: mensaje,
           ventaId: id,
         });
-
-        if (resultado.success) {
-          this.logger.log(`✅ Notificación de anulación enviada a ${venta.cliente.telefono}`);
-        } else {
-          this.logger.warn(`⚠️ Error al enviar notificación: ${resultado.error}`);
-        }
-      } catch (error) {
-        this.logger.warn(`⚠️ No se pudo enviar notificación de anulación: ${error.message}`);
+      } catch (e) {
+        this.logger.warn(`⚠️ WhatsApp falló en anulación venta ${id}: ${e.message}`);
       }
     }
 
     return ventaAnulada;
-  }
+  });
+}
+
+
 
   async getVentasDelDia(): Promise<{ ventas: Venta[]; totalVentas: number; totalMonto: number }> {
     const today = new Date();
@@ -470,13 +495,13 @@ export class VentasService {
       const estadisticasBasicas = await this.ventaRepository
         .createQueryBuilder('venta')
         .select([
-          'COUNT(venta.id)::int as totalVentas',
-          'COALESCE(SUM(venta.total), 0)::numeric as totalMonto',
-          'COALESCE(AVG(venta.total), 0)::numeric as promedioVenta',
-          'COALESCE(SUM(venta.descuento), 0)::numeric as totalDescuentos',
-          'COALESCE(SUM(venta.recargoExtra), 0)::numeric as totalRecargos',
-          'COALESCE(SUM(venta.puntosOtorgados), 0)::int as totalPuntosOtorgados',
-          'COALESCE(SUM(venta.puntosUsados), 0)::int as totalPuntosUsados',
+          'COUNT(venta.id)::int as "totalVentas"',
+          'COALESCE(SUM(venta.total), 0)::numeric as "totalMonto"',
+          'COALESCE(AVG(venta.total), 0)::numeric as "promedioVenta"',
+          'COALESCE(SUM(venta.descuento), 0)::numeric as "totalDescuentos"',
+          'COALESCE(SUM(venta.recargoExtra), 0)::numeric as "totalRecargos"',
+          'COALESCE(SUM(venta.puntosOtorgados), 0)::int as "totalPuntosOtorgados"',
+          'COALESCE(SUM(venta.puntosUsados), 0)::int as "totalPuntosUsados"',
         ])
         .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
         .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
@@ -492,16 +517,16 @@ export class VentasService {
       .createQueryBuilder('pago')
       .innerJoin('pago.venta', 'venta')
       .select([
-        'pago.metodoPago as metodoPago',
-        'COUNT(DISTINCT venta.id)::int as cantidadVentas',
-        'COALESCE(SUM(pago.monto), 0)::numeric as montoTotal',
+        'pago.metodoPago as "metodoPago"',
+        'COUNT(DISTINCT venta.id)::int as "cantidadVentas"',
+        'COALESCE(SUM(pago.monto), 0)::numeric as "montoTotal"',
       ])
       .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
       .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
       .andWhere('pago.estado = :estadoPago', { estadoPago: 'COMPLETADO' })
       .andWhere('pago.metodoPago IS NOT NULL')
       .groupBy('pago.metodoPago')
-      .orderBy('montoTotal', 'DESC')
+      .orderBy('SUM(pago.monto)', 'DESC')
       .getRawMany();
 
     // ===== CONSULTA OPTIMIZADA: TOP PRODUCTOS VENDIDOS =====
@@ -523,17 +548,18 @@ export class VentasService {
 
     // ===== CONSULTA OPTIMIZADA: VENTAS POR TIPO DE COMPRA =====
     const ventasPorTipo = await this.ventaRepository
-      .createQueryBuilder('venta')
-      .select([
-        "COALESCE(venta.tipoCompra, 'LOCAL') as tipoCompra",
-        'COUNT(venta.id)::int as cantidadVentas',
-        'COALESCE(SUM(venta.total), 0)::numeric as montoTotal',
-      ])
-      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
-      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
-      .groupBy('venta.tipoCompra')
-      .orderBy('montoTotal', 'DESC')
-      .getRawMany();
+  .createQueryBuilder('venta')
+  .select([
+    "COALESCE(venta.tipoCompra, 'LOCAL') as \"tipoCompra\"",
+    'COUNT(venta.id)::int as "cantidadVentas"',
+    'COALESCE(SUM(venta.total), 0)::numeric as "montoTotal"',
+  ])
+  .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+  .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+  .groupBy("COALESCE(venta.tipoCompra, 'LOCAL')")
+   .orderBy('SUM(venta.total)', 'DESC') // ✅
+  .getRawMany();
+
 
     // ===== FORMATEAR RESULTADOS =====
     const ventasPorMetodoFormateado = ventasPorMetodo.reduce((acc, item) => {
@@ -781,29 +807,30 @@ export class VentasService {
         .createQueryBuilder('pago')
         .innerJoin('pago.venta', 'venta')
         .select([
-          'pago.metodoPago as metodoPago',
-          'COUNT(DISTINCT venta.id)::int as cantidad',
-          'COALESCE(SUM(pago.monto), 0)::numeric as monto',
-        ])
+              'pago.metodoPago as "metodoPago"',
+              'COUNT(DISTINCT venta.id)::int as "cantidad"',
+              'COALESCE(SUM(pago.monto), 0)::numeric as "monto"',
+            ])
+
         .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
         .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
         .andWhere('pago.estado = :estadoPago', { estadoPago: 'COMPLETADO' })
         .andWhere('pago.metodoPago IS NOT NULL') // Solo pagos con método especificado
         .groupBy('pago.metodoPago')
-        .orderBy('monto', 'DESC')
+        .orderBy('SUM(pago.monto)', 'DESC')
         .getRawMany();
 
       // Formatear desglose de métodos de pago (solo valores válidos del enum)
       const desgloseMetodosPago: { [key: string]: { cantidad: number; monto: number } } = {};
       desgloseMetodosPagoRaw.forEach(item => {
-        // Solo procesar si el método de pago es válido según el enum
-        if (item.metodoPago && Object.values(MetodoPago).includes(item.metodoPago)) {
+          if (!item.metodoPago) return;
+
           desgloseMetodosPago[item.metodoPago] = {
-            cantidad: item.cantidad || 0,
-            monto: MoneyUtil.round(item.monto || 0),
+            cantidad: Number(item.cantidad) || 0,
+            monto: MoneyUtil.round(Number(item.monto) || 0),
           };
-        }
-      });
+          });
+
 
       // Nota: Código de compatibilidad temporal eliminado - ahora solo usa venta_pagos
 
