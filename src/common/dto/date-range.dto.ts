@@ -1,13 +1,12 @@
 import { IsOptional, IsString, Matches } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { DatePosUtil } from '../utils/date-pos.util';
 
 export class DateRangeDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Fecha de inicio en formato POS: YYYY-MM-DD HH:mm:ss o YYYY-MM-DD',
     example: '2025-12-01 00:00:00',
-    required: false,
   })
   @IsOptional()
   @IsString()
@@ -27,10 +26,9 @@ export class DateRangeDto {
   })
   fechaInicio?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Fecha de fin en formato POS: YYYY-MM-DD HH:mm:ss o YYYY-MM-DD',
     example: '2025-12-31 23:59:59',
-    required: false,
   })
   @IsOptional()
   @IsString()

@@ -83,8 +83,8 @@ export class CajaController {
   @Get('estadisticas')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obtener estadísticas de cajas por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)', required: false })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)', required: false })
+  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD HH:mm:ss)', required: false })
+  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD HH:mm:ss)', required: false })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
   @ApiResponse({ status: 400, description: 'Parámetros de fecha inválidos' })
   async getEstadisticas(@Query() dateRangeDto: DateRangeDto) {
@@ -102,8 +102,8 @@ export class CajaController {
   @Get('rango')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obtener cajas por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)', required: false })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)', required: false })
+  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD HH:mm:ss)', required: false })
+  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD HH:mm:ss)', required: false })
   @ApiResponse({ status: 200, description: 'Cajas del rango obtenidas exitosamente' })
   @ApiResponse({ status: 400, description: 'Parámetros de fecha inválidos' })
   async getCajasPorFecha(@Query() dateRangeDto: DateRangeDto) {

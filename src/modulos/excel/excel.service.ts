@@ -79,6 +79,9 @@ export class ExcelService {
       relations: ['cliente', 'pagos'],
       order: { fecha: 'DESC' }
     });
+    const ventasValidas = ventas.filter(
+        v => v.estado === 'COMPLETADO'
+      );
 
     // Headers
     const headers = [
@@ -135,7 +138,12 @@ export class ExcelService {
         row.push(productos, cantidades, precios);
       }
 
-      worksheet.addRow(row);
+     const rowRef = worksheet.addRow(row);
+
+      if (venta.estado === 'ANULADO') {
+        rowRef.font = { color: { argb: 'FFFF0000' } };
+      }
+
     });
 
     // Auto-ajustar columnas
@@ -143,30 +151,38 @@ export class ExcelService {
       column.width = 15;
     });
 
-    // Agregar totales - asegurar operaciones numéricas
-    const totalSubtotal = ventas.reduce((sum, v) => {
-      const subtotal = typeof v.subTotal === 'string' ? parseFloat(v.subTotal) : v.subTotal;
-      return sum + (isNaN(subtotal) ? 0 : subtotal);
-    }, 0);
     
-    const totalDescuento = ventas.reduce((sum, v) => {
-      const descuento = typeof v.descuento === 'string' ? parseFloat(v.descuento) : v.descuento;
-      return sum + (isNaN(descuento) ? 0 : descuento);
-    }, 0);
-    
-    const totalRecargoExtra = ventas.reduce((sum, v) => {
-      const recargo = typeof v.recargoExtra === 'string' ? parseFloat(v.recargoExtra) : (v.recargoExtra || 0);
-      return sum + (isNaN(recargo) ? 0 : recargo);
-    }, 0);
-    
-    const totalTotal = ventas.reduce((sum, v) => {
-      const total = typeof v.total === 'string' ? parseFloat(v.total) : v.total;
-      return sum + (isNaN(total) ? 0 : total);
-    }, 0);
-    
-    const totalPuntosOtorgados = ventas.reduce((sum, v) => sum + (v.puntosOtorgados || 0), 0);
-    const totalPuntosUsados = ventas.reduce((sum, v) => sum + (v.puntosUsados || 0), 0);
 
+    // Agregar totales - asegurar operaciones numéricas
+        const totalSubtotal = ventasValidas.reduce((sum, v) => {
+      const subtotal = Number(v.subTotal) || 0;
+      return sum + subtotal;
+    }, 0);
+
+    const totalDescuento = ventasValidas.reduce((sum, v) => {
+      const descuento = Number(v.descuento) || 0;
+      return sum + descuento;
+    }, 0);
+
+    const totalRecargoExtra = ventasValidas.reduce((sum, v) => {
+      const recargo = Number(v.recargoExtra) || 0;
+      return sum + recargo;
+    }, 0);
+
+    const totalTotal = ventasValidas.reduce((sum, v) => {
+      const total = Number(v.total) || 0;
+      return sum + total;
+    }, 0);
+
+    const totalPuntosOtorgados = ventasValidas.reduce(
+      (sum, v) => sum + (v.puntosOtorgados || 0),
+      0
+    );
+
+    const totalPuntosUsados = ventasValidas.reduce(
+      (sum, v) => sum + (v.puntosUsados || 0),
+      0
+    );
     const totalRow = worksheet.addRow([
       '', '', '', 'TOTALES:', 
       totalSubtotal,
@@ -454,6 +470,11 @@ export class ExcelService {
       order: { fechaRegistro: 'DESC' }
     });
 
+    const pagosValidos = ventaPagos.filter(
+      pago => pago.estado === 'COMPLETADO'
+    );
+
+
     // Headers
     const headers = [
       'ID Pago', 'ID Venta', 'Ticket ID', 'Fecha Venta', 'Cliente', 'DNI Cliente',
@@ -474,6 +495,7 @@ export class ExcelService {
 
     // Datos
     ventaPagos.forEach(pago => {
+      
       const row = [
         pago.id,
         pago.ventaId,
@@ -491,23 +513,34 @@ export class ExcelService {
         pago.secuencia
       ];
 
-      worksheet.addRow(row);
+      const rowRef = worksheet.addRow(row);
+
+      if (pago.estado === 'ANULADO') {
+        rowRef.font = { color: { argb: 'FFFF0000' } };
+      }
+
     });
 
+    
     // Auto-ajustar columnas
     worksheet.columns.forEach(column => {
       column.width = 15;
     });
 
     // Agregar totales por método de pago
-    const totalesPorMetodo = ventaPagos.reduce((acc, pago) => {
-      if (!acc[pago.metodoPago]) {
-        acc[pago.metodoPago] = { cantidad: 0, monto: 0 };
-      }
-      acc[pago.metodoPago].cantidad += 1;
-      acc[pago.metodoPago].monto += typeof pago.monto === 'string' ? parseFloat(pago.monto) : pago.monto;
-      return acc;
-    }, {} as { [key: string]: { cantidad: number; monto: number } });
+    const totalesPorMetodo = pagosValidos.reduce((acc, pago) => {
+        if (!pago.metodoPago) return acc;
+
+        if (!acc[pago.metodoPago]) {
+          acc[pago.metodoPago] = { cantidad: 0, monto: 0 };
+        }
+
+        acc[pago.metodoPago].cantidad += 1;
+        acc[pago.metodoPago].monto += Number(pago.monto);
+
+        return acc;
+      }, {} as { [key: string]: { cantidad: number; monto: number } });
+
 
     // Agregar fila vacía
     worksheet.addRow([]);
@@ -540,4 +573,5 @@ export class ExcelService {
       fgColor: { argb: 'FFFF6347' }
     };
   }
+
 }
