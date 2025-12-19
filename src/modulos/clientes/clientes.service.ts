@@ -243,8 +243,8 @@ export class ClientesService {
     return codigo;
   }
 
-  async getEstadisticasCliente(id: number): Promise<any> {
-    const cliente = await this.findById(id);
+  async getEstadisticasCliente(dni: string): Promise<any> {
+    const cliente = await this.findByDni(dni);
     
     const totalCompras = cliente.historialCompras?.length || 0;
     const totalGastado = cliente.historialCompras?.reduce((sum, compra) => sum + compra.monto, 0) || 0;

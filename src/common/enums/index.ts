@@ -45,6 +45,7 @@ export enum EstadoCaja {
 }
 
 export enum CategoriaGasto {
+  ADMINISTRATIVO = 'ADMINISTRATIVO',
   OPERATIVO = 'OPERATIVO',
   MARKETING = 'MARKETING',
   MANTENIMIENTO = 'MANTENIMIENTO',

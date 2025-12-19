@@ -97,13 +97,13 @@ export class ClientesController {
     return this.clientesService.findById(id);
   }
 
-  @Get(':id/estadisticas')
+  @Get(':dni/estadisticas')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener estadísticas del cliente' })
   @ApiResponse({ status: 200, description: 'Estadísticas del cliente obtenidas exitosamente' })
   @ApiResponse({ status: 404, description: 'Cliente no encontrado' })
-  getEstadisticas(@Param('id', ParseIntPipe) id: number) {
-    return this.clientesService.getEstadisticasCliente(id);
+  getEstadisticas(@Param('dni') dni: string) {
+    return this.clientesService.getEstadisticasCliente(dni);
   }
 
   @Patch(':id')

@@ -97,20 +97,13 @@ export class WhatsappController {
     return this.whatsappService.sendLowStockAlert(body.adminPhone, body.productos);
   }
 
-  @Post('send-welcome')
+  @Post('send-welcome/:clienteId')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
-  @ApiOperation({ summary: 'Enviar mensaje de bienvenida a nuevo cliente' })
+  @ApiOperation({ summary: 'Enviar mensaje de bienvenida a nuevo cliente por ID' })
   @ApiResponse({ status: 201, description: 'Mensaje de bienvenida enviado exitosamente' })
-  sendWelcomeMessage(
-    @Body() body: { phone: string; nombres: string; apellidos: string; codigoCorto: string },
-  ) {
-    return this.whatsappService.sendWelcomeMessage(
-      body.phone,
-      body.nombres,
-      body.apellidos,
-      body.codigoCorto,
-    );
-  }
+  sendWelcomeMessage(@Param('clienteId', ParseIntPipe) clienteId: number) {
+  return this.whatsappService.sendWelcomeByClienteId(clienteId);
+}
 
   @Post('send-client-info/:dni')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)

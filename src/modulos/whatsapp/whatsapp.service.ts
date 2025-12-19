@@ -411,23 +411,35 @@ ${productosTexto}
     return this.sendMessage({ phone: adminPhone, message });
   }
 
-  async sendWelcomeMessage(
-    phone: string,
-    nombres: string,
-    apellidos: string,
-    codigoCorto: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const message = `🎉 ¡Bienvenido/a a Francachela, ${nombres} ${apellidos}!
+  async sendWelcomeByClienteId(
+    clienteId: number,
+  ): Promise<{ success: boolean }> {
+    const cliente = await this.clienteRepository.findOne({
+      where: { id: clienteId },
+    });
 
-🆔 Tu código de cliente: ${codigoCorto}
+    if (!cliente) {
+      throw new NotFoundException('Cliente no encontrado');
+    }
+
+    if (!cliente.telefono) {
+      throw new BadRequestException('Cliente sin teléfono');
+    }
+
+    const message = `🎉 ¡Bienvenido/a a Francachela, ${cliente.nombres} ${cliente.apellidos}!
+
+🆔 Tu código de cliente: ${cliente.codigoCorto}
 ⭐ Empieza a acumular puntos con cada compra
 🎁 Canjea tus puntos por descuentos especiales
 
-🌐 Conoce más en: https://francachela-licores.github.io/francachela/
+🌐 https://francachela-licores.github.io/francachela/
 
 ¡Gracias por elegirnos! 🍻`;
 
-    return this.sendMessage({ phone, message });
+    return this.sendMessage({
+      phone: cliente.telefono,
+      message,
+    });
   }
 
   async sendClientInfoMessage(
