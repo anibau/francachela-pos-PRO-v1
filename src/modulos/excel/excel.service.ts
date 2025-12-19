@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { Venta } from '../../entities/venta.entity';
+import { VentaPago } from '../../entities/venta-pago.entity';
 import { Producto } from '../../entities/producto.entity';
 import { Cliente } from '../../entities/cliente.entity';
 import { MovimientoInventario } from '../../entities/movimiento-inventario.entity';
@@ -16,6 +17,8 @@ export class ExcelService {
   constructor(
     @InjectRepository(Venta)
     private ventaRepository: Repository<Venta>,
+    @InjectRepository(VentaPago)
+    private ventaPagoRepository: Repository<VentaPago>,
     @InjectRepository(Producto)
     private productoRepository: Repository<Producto>,
     @InjectRepository(Cliente)
@@ -47,6 +50,9 @@ export class ExcelService {
         case TipoReporte.DELIVERY:
           await this.createDeliverySheet(workbook, exportDto);
           break;
+        case TipoReporte.VENTA_PAGOS:
+          await this.createVentaPagosSheet(workbook, exportDto);
+          break;
         default:
           throw new Error(`Tipo de reporte no soportado: ${exportDto.tipoReporte}`);
       }
@@ -73,11 +79,14 @@ export class ExcelService {
       relations: ['cliente', 'pagos'],
       order: { fecha: 'DESC' }
     });
+    const ventasValidas = ventas.filter(
+        v => v.estado === 'COMPLETADO'
+      );
 
     // Headers
     const headers = [
       'ID', 'Fecha', 'Cliente', 'DNI Cliente', 'Subtotal', 'Descuento', 
-      'Total', 'Métodos Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
+      'Recargo Extra', 'Total', 'Métodos Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
       'Puntos Usados', 'Tipo Compra', 'Comentario'
     ];
 
@@ -110,6 +119,7 @@ export class ExcelService {
         venta.cliente?.dni || '',
         venta.subTotal,
         venta.descuento,
+        venta.recargoExtra || 0,
         venta.total,
         metodosPago,
         venta.cajero,
@@ -128,7 +138,12 @@ export class ExcelService {
         row.push(productos, cantidades, precios);
       }
 
-      worksheet.addRow(row);
+     const rowRef = worksheet.addRow(row);
+
+      if (venta.estado === 'ANULADO') {
+        rowRef.font = { color: { argb: 'FFFF0000' } };
+      }
+
     });
 
     // Auto-ajustar columnas
@@ -136,29 +151,43 @@ export class ExcelService {
       column.width = 15;
     });
 
-    // Agregar totales - asegurar operaciones numéricas
-    const totalSubtotal = ventas.reduce((sum, v) => {
-      const subtotal = typeof v.subTotal === 'string' ? parseFloat(v.subTotal) : v.subTotal;
-      return sum + (isNaN(subtotal) ? 0 : subtotal);
-    }, 0);
     
-    const totalDescuento = ventas.reduce((sum, v) => {
-      const descuento = typeof v.descuento === 'string' ? parseFloat(v.descuento) : v.descuento;
-      return sum + (isNaN(descuento) ? 0 : descuento);
-    }, 0);
-    
-    const totalTotal = ventas.reduce((sum, v) => {
-      const total = typeof v.total === 'string' ? parseFloat(v.total) : v.total;
-      return sum + (isNaN(total) ? 0 : total);
-    }, 0);
-    
-    const totalPuntosOtorgados = ventas.reduce((sum, v) => sum + (v.puntosOtorgados || 0), 0);
-    const totalPuntosUsados = ventas.reduce((sum, v) => sum + (v.puntosUsados || 0), 0);
 
+    // Agregar totales - asegurar operaciones numéricas
+        const totalSubtotal = ventasValidas.reduce((sum, v) => {
+      const subtotal = Number(v.subTotal) || 0;
+      return sum + subtotal;
+    }, 0);
+
+    const totalDescuento = ventasValidas.reduce((sum, v) => {
+      const descuento = Number(v.descuento) || 0;
+      return sum + descuento;
+    }, 0);
+
+    const totalRecargoExtra = ventasValidas.reduce((sum, v) => {
+      const recargo = Number(v.recargoExtra) || 0;
+      return sum + recargo;
+    }, 0);
+
+    const totalTotal = ventasValidas.reduce((sum, v) => {
+      const total = Number(v.total) || 0;
+      return sum + total;
+    }, 0);
+
+    const totalPuntosOtorgados = ventasValidas.reduce(
+      (sum, v) => sum + (v.puntosOtorgados || 0),
+      0
+    );
+
+    const totalPuntosUsados = ventasValidas.reduce(
+      (sum, v) => sum + (v.puntosUsados || 0),
+      0
+    );
     const totalRow = worksheet.addRow([
       '', '', '', 'TOTALES:', 
       totalSubtotal,
       totalDescuento,
+      totalRecargoExtra,
       totalTotal,
       '', '', '', 
       totalPuntosOtorgados,
@@ -425,4 +454,124 @@ export class ExcelService {
       column.width = 15;
     });
   }
+
+  private async createVentaPagosSheet(workbook: ExcelJS.Workbook, exportDto: ExportVentasDto) {
+    const worksheet = workbook.addWorksheet('Venta Pagos');
+
+    // Configurar filtros de fecha
+    const whereCondition: any = {};
+    if (exportDto.fechaInicio && exportDto.fechaFin) {
+      whereCondition.fechaRegistro = Between(new Date(exportDto.fechaInicio), new Date(exportDto.fechaFin));
+    }
+
+    const ventaPagos = await this.ventaPagoRepository.find({
+      where: whereCondition,
+      relations: ['venta', 'venta.cliente'],
+      order: { fechaRegistro: 'DESC' }
+    });
+
+    const pagosValidos = ventaPagos.filter(
+      pago => pago.estado === 'COMPLETADO'
+    );
+
+
+    // Headers
+    const headers = [
+      'ID Pago', 'ID Venta', 'Ticket ID', 'Fecha Venta', 'Cliente', 'DNI Cliente',
+      'Método Pago', 'Monto', 'Referencia', 'Estado Pago', 'Notas', 
+      'Fecha Registro', 'Registrado Por', 'Secuencia'
+    ];
+
+    worksheet.addRow(headers);
+
+    // Estilo para headers
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6FA' }
+    };
+
+    // Datos
+    ventaPagos.forEach(pago => {
+      
+      const row = [
+        pago.id,
+        pago.ventaId,
+        pago.venta?.ticketId || '',
+        pago.venta?.fecha ? pago.venta.fecha.toLocaleDateString() : '',
+        pago.venta?.cliente ? `${pago.venta.cliente.nombres} ${pago.venta.cliente.apellidos}` : 'Sin cliente',
+        pago.venta?.cliente?.dni || '',
+        pago.metodoPago,
+        pago.monto,
+        pago.referencia || '',
+        pago.estado,
+        pago.notas || '',
+        pago.fechaRegistro.toLocaleString(),
+        pago.registradoPor,
+        pago.secuencia
+      ];
+
+      const rowRef = worksheet.addRow(row);
+
+      if (pago.estado === 'ANULADO') {
+        rowRef.font = { color: { argb: 'FFFF0000' } };
+      }
+
+    });
+
+    
+    // Auto-ajustar columnas
+    worksheet.columns.forEach(column => {
+      column.width = 15;
+    });
+
+    // Agregar totales por método de pago
+    const totalesPorMetodo = pagosValidos.reduce((acc, pago) => {
+        if (!pago.metodoPago) return acc;
+
+        if (!acc[pago.metodoPago]) {
+          acc[pago.metodoPago] = { cantidad: 0, monto: 0 };
+        }
+
+        acc[pago.metodoPago].cantidad += 1;
+        acc[pago.metodoPago].monto += Number(pago.monto);
+
+        return acc;
+      }, {} as { [key: string]: { cantidad: number; monto: number } });
+
+
+    // Agregar fila vacía
+    worksheet.addRow([]);
+
+    // Agregar resumen por método de pago
+    worksheet.addRow(['RESUMEN POR MÉTODO DE PAGO']);
+    const resumenHeaderRow = worksheet.getRow(worksheet.rowCount);
+    resumenHeaderRow.font = { bold: true };
+    resumenHeaderRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFD700' }
+    };
+
+    worksheet.addRow(['Método', 'Cantidad', 'Monto Total']);
+    const subHeaderRow = worksheet.getRow(worksheet.rowCount);
+    subHeaderRow.font = { bold: true };
+
+    Object.entries(totalesPorMetodo).forEach(([metodo, datos]) => {
+      worksheet.addRow([metodo, datos.cantidad, datos.monto.toFixed(2)]);
+    });
+
+    // Total general
+    const totalGeneral = Object.values(totalesPorMetodo).reduce((sum, datos) => sum + datos.monto, 0);
+    const totalRow = worksheet.addRow(['TOTAL GENERAL', '', totalGeneral.toFixed(2)]);
+    totalRow.font = { bold: true };
+    totalRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF6347' }
+    };
+  }
+
 }

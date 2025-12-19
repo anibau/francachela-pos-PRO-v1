@@ -168,6 +168,31 @@ export class VentasController {
   }
 
   /**
+   * Generar corte de ventas por rango de fechas
+   * - Métricas financieras completas
+   * - Desglose por métodos de pago y productos
+   * - Análisis de tendencias por día
+   */
+  @Get('corte')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Generar corte de ventas',
+    description: 'Genera un reporte completo de ventas para un rango de fechas específico'
+  })
+  @ApiQuery({ name: 'fechaInicio', required: false, description: 'Fecha inicio (YYYY-MM-DD HH:mm:ss)' })
+  @ApiQuery({ name: 'fechaFin', required: false, description: 'Fecha fin (YYYY-MM-DD HH:mm:ss)' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Corte de ventas generado exitosamente',
+    type: SalesCutoffDto
+  })
+  @ApiResponse({ status: 400, description: 'Rango de fechas inválido' })
+  getSalesCutoff(@Query() dateRangeDto: DateRangeDto): Promise<SalesCutoffDto> {
+    return this.ventasService.getSalesCutoffReport(dateRangeDto);
+  }
+
+  /**
    * Obtener venta por ticket ID
    */
   @Get('ticket/:ticketId')
@@ -195,29 +220,6 @@ export class VentasController {
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.ventasService.findById(id);
-  }
-
-  /**
-   * Generar corte de ventas por rango de fechas
-   * - Métricas financieras completas
-   * - Desglose por métodos de pago y productos
-   * - Análisis de tendencias por día
-   */
-  @Get('corte')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: 'Generar corte de ventas',
-    description: 'Genera un reporte completo de ventas para un rango de fechas específico'
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Corte de ventas generado exitosamente',
-    type: SalesCutoffDto
-  })
-  @ApiResponse({ status: 400, description: 'Rango de fechas inválido' })
-  getSalesCutoff(@Query() dateRangeDto: DateRangeDto): Promise<SalesCutoffDto> {
-    return this.ventasService.getSalesCutoffReport(dateRangeDto);
   }
 
   /**

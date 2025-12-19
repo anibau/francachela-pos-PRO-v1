@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExcelService } from './excel.service';
 import { ExcelController } from './excel.controller';
 import { Venta } from '../../entities/venta.entity';
+import { VentaPago } from '../../entities/venta-pago.entity';
 import { Producto } from '../../entities/producto.entity';
 import { Cliente } from '../../entities/cliente.entity';
 import { MovimientoInventario } from '../../entities/movimiento-inventario.entity';
@@ -11,6 +12,7 @@ import { Delivery } from '../../entities/delivery.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([
     Venta, 
+    VentaPago,
     Producto, 
     Cliente, 
     MovimientoInventario, 
@@ -21,4 +23,3 @@ import { Delivery } from '../../entities/delivery.entity';
   exports: [ExcelService],
 })
 export class ExcelModule {}
-
