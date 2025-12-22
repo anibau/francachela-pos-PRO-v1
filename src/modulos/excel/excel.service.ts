@@ -86,7 +86,7 @@ export class ExcelService {
     // Headers
     const headers = [
       'ID', 'Fecha', 'Cliente', 'DNI Cliente', 'Subtotal', 'Descuento', 
-      'Recargo Extra', 'Total', 'Métodos Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
+      'Recargo Extra', 'Total', 'Ajuste Redondeo', 'Total Cobrado', 'Métodos Pago', 'Cajero', 'Estado', 'Puntos Otorgados', 
       'Puntos Usados', 'Tipo Compra', 'Comentario'
     ];
 
@@ -121,6 +121,8 @@ export class ExcelService {
         venta.descuento,
         venta.recargoExtra || 0,
         venta.total,
+        venta.ajusteRedondeo || 0,
+        venta.totalCobrado,
         metodosPago,
         venta.cajero,
         venta.estado,

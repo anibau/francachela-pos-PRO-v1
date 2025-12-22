@@ -44,6 +44,8 @@ interface ResumenVenta {
   descuentoTotal: number;
   recargoExtra: number;
   total: number;
+  totalCobrado: number;
+  ajusteRedondeo: number;
   puntosOtorgados: number;
   vuelto: number;
 }
@@ -104,6 +106,7 @@ export class VentasService {
         createVentaDto.recargoExtra || 0,
         createVentaDto.puntosUsados || 0,
         cliente,
+        createVentaDto.montoRecibido,
       );
 
       // ===== 4. VALIDACIÓN DE PUNTOS DEL CLIENTE =====
@@ -128,7 +131,7 @@ export class VentasService {
       // ===== 6. PROCESAR MÉTODOS DE PAGO NORMALIZADOS =====
       const pagosNormalizados = await this._procesarPagosNormalizados(
         createVentaDto,
-        resumen.total,
+        resumen.totalCobrado,
         cajero,
         queryRunner,
       );
@@ -143,9 +146,10 @@ export class VentasService {
         descuento: resumen.descuentoTotal,
         recargoExtra: createVentaDto.recargoExtra || 0,
         total: resumen.total,
+        ajusteRedondeo: resumen.ajusteRedondeo,
         puntosOtorgados: resumen.puntosOtorgados,
         puntosUsados: createVentaDto.puntosUsados || 0,
-        montoRecibido: createVentaDto.montoRecibido || resumen.total,
+        montoRecibido: resumen.totalCobrado,
         vuelto: resumen.vuelto,
         ticketId,
         cajero,
@@ -698,6 +702,7 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
 
   /**
    * Calcula el resumen completo de la venta (subtotal, descuentos, total, vuelto, puntos)
+   * Implementa el modelo correcto de POS con ajuste de redondeo
    */
   private _calcularResumenVenta(
     productosValidados: ProductoValidado[],
@@ -705,6 +710,7 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
     recargoExtra: number = 0,
     puntosUsados: number = 0,
     cliente: Cliente | null,
+    montoRecibido?: number,
   ): ResumenVenta {
     // Subtotal con redondeo correcto
     const subTotal = MoneyUtil.sum(productosValidados.map(p => p.subtotal));
@@ -725,11 +731,26 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
       );
     }
 
-    // Puntos a otorgar (1 punto por cada sol gastado, solo si hay cliente)
+    // ===== MODELO CORRECTO DE POS =====
+    // 1. total = valor real de los productos (ya calculado arriba)
+    // 2. totalCobrado = lo que efectivamente paga el cliente
+    // 3. ajusteRedondeo = diferencia contable
+    
+    const totalCobrado = montoRecibido ? MoneyUtil.round(montoRecibido) : total;
+    const ajusteRedondeo = MoneyUtil.round(totalCobrado - total);
+
+    // Validar que el ajuste de redondeo esté dentro de tolerancia
+    if (Math.abs(ajusteRedondeo) > 0.05) {
+      throw new BadRequestException(
+        `Ajuste de redondeo excesivo: S/ ${Math.abs(ajusteRedondeo).toFixed(2)}. Máximo permitido: S/ 0.05`,
+      );
+    }
+
+    // Puntos a otorgar (1 punto por cada sol gastado, basado en el total teórico)
     const puntosOtorgados = cliente ? Math.floor(total) : 0;
 
-    // Vuelto (montoRecibido - total)
-    const vuelto = 0; // Se calculará después en el controller si es necesario
+    // Vuelto (totalCobrado - totalCobrado, normalmente 0 en POS con redondeo)
+    const vuelto = MoneyUtil.getChange(totalCobrado, totalCobrado);
 
     return {
       subTotal,
@@ -737,6 +758,8 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
       descuentoTotal,
       recargoExtra,
       total,
+      totalCobrado,
+      ajusteRedondeo,
       puntosOtorgados,
       vuelto,
     };
@@ -796,8 +819,11 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
 
       // Métricas básicas
       const totalVentas = ventasCompletadas.reduce((sum, v) => sum + v.total, 0);
+      const totalCobrado = ventasCompletadas.reduce((sum, v) => sum + (v.total + (v.ajusteRedondeo || 0)), 0);
+      const totalAjusteRedondeo = ventasCompletadas.reduce((sum, v) => sum + (v.ajusteRedondeo || 0), 0);
       const numeroTransacciones = ventasCompletadas.length;
       const ticketPromedio = numeroTransacciones > 0 ? totalVentas / numeroTransacciones : 0;
+      const ticketPromedioCobrado = numeroTransacciones > 0 ? totalCobrado / numeroTransacciones : 0;
       const totalDescuentos = ventasCompletadas.reduce((sum, v) => sum + v.descuento, 0);
       const puntosOtorgados = ventasCompletadas.reduce((sum, v) => sum + v.puntosOtorgados, 0);
       const puntosCanjeados = ventasCompletadas.reduce((sum, v) => sum + v.puntosUsados, 0);
@@ -905,8 +931,11 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,
         totalVentas: MoneyUtil.round(totalVentas),
+        totalCobrado: MoneyUtil.round(totalCobrado),
+        totalAjusteRedondeo: MoneyUtil.round(totalAjusteRedondeo),
         numeroTransacciones,
         ticketPromedio: MoneyUtil.round(ticketPromedio),
+        ticketPromedioCobrado: MoneyUtil.round(ticketPromedioCobrado),
         totalDescuentos: MoneyUtil.round(totalDescuentos),
         puntosOtorgados,
         puntosCanjeados,

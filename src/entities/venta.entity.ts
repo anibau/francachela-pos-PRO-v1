@@ -79,6 +79,21 @@ export class Venta {
   vuelto: number;
 
   /**
+   * Ajuste de redondeo aplicado a la venta
+   * Representa la diferencia entre el total calculado y el monto efectivamente cobrado
+   * Ejemplo: Producto 0.16 x 6 = 0.96, Cliente paga 1.00, ajusteRedondeo = 0.04
+   * Fórmula: ajusteRedondeo = totalCobrado - total
+   */
+  @Column('decimal', { 
+    precision: 10, 
+    scale: 2, 
+    default: 0, 
+    transformer: decimalTransformer,
+    comment: 'Diferencia contable entre total calculado y monto efectivamente cobrado'
+  })
+  ajusteRedondeo: number;
+
+  /**
    * Relación One-to-Many con VentaPago
    * Una venta puede tener múltiples métodos de pago
    * REEMPLAZA el campo metodosPageoUsados para normalización
@@ -115,6 +130,15 @@ export class Venta {
    */
   get totalCalculado(): number {
     return this.subTotal - (this.descuento || 0) + (this.recargoExtra || 0);
+  }
+
+  /**
+   * Getter que calcula el total efectivamente cobrado
+   * Incluye el ajuste de redondeo para reflejar lo que realmente pagó el cliente
+   * Fórmula: totalCobrado = total + ajusteRedondeo
+   */
+  get totalCobrado(): number {
+    return MoneyUtil.round(this.total + (this.ajusteRedondeo || 0));
   }
 
   /**

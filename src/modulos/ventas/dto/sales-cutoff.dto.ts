@@ -18,10 +18,22 @@ export class SalesCutoffDto {
   fechaFin: Date;
 
   @ApiProperty({ 
-    description: 'Total de ventas en el período', 
+    description: 'Total de ventas en el período (valor teórico)', 
     example: 15420.50 
   })
   totalVentas: number;
+
+  @ApiProperty({ 
+    description: 'Total efectivamente cobrado (incluye ajuste de redondeo)', 
+    example: 15425.30 
+  })
+  totalCobrado: number;
+
+  @ApiProperty({ 
+    description: 'Total de ajustes de redondeo aplicados', 
+    example: 4.80 
+  })
+  totalAjusteRedondeo: number;
 
   @ApiProperty({ 
     description: 'Número de transacciones', 
@@ -30,10 +42,16 @@ export class SalesCutoffDto {
   numeroTransacciones: number;
 
   @ApiProperty({ 
-    description: 'Ticket promedio', 
+    description: 'Ticket promedio (valor teórico)', 
     example: 121.42 
   })
   ticketPromedio: number;
+
+  @ApiProperty({ 
+    description: 'Ticket promedio cobrado (incluye ajuste de redondeo)', 
+    example: 121.46 
+  })
+  ticketPromedioCobrado: number;
 
   @ApiProperty({ 
     description: 'Total de descuentos aplicados', 
