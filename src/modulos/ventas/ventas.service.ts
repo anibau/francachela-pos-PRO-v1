@@ -100,13 +100,18 @@ export class VentasService {
       );
 
       // ===== 3. CÁLCULO DE TOTALES =====
+      // Calcular el monto real pagado desde los métodos de pago (fuente de verdad)
+      const totalPagado = MoneyUtil.sum(
+        createVentaDto.metodosPageo.map(p => p.monto)
+      );
+
       const resumen = this._calcularResumenVenta(
         productosValidados,
         createVentaDto.descuento || 0,
         createVentaDto.recargoExtra || 0,
         createVentaDto.puntosUsados || 0,
         cliente,
-        createVentaDto.montoRecibido,
+        totalPagado, // Usar el monto real calculado desde métodos de pago
       );
 
       // ===== 4. VALIDACIÓN DE PUNTOS DEL CLIENTE =====
@@ -703,6 +708,7 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
   /**
    * Calcula el resumen completo de la venta (subtotal, descuentos, total, vuelto, puntos)
    * Implementa el modelo correcto de POS con ajuste de redondeo
+   * @param montoRecibido - Monto real pagado calculado desde la suma de métodos de pago (fuente de verdad)
    */
   private _calcularResumenVenta(
     productosValidados: ProductoValidado[],
