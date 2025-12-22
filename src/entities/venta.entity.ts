@@ -38,6 +38,21 @@ export class Venta {
   })
   recargoExtra: number;
 
+    /**
+   * Ajuste de redondeo aplicado a la venta
+   * Representa la diferencia entre el total calculado y el monto efectivamente cobrado
+   * Ejemplo: Producto 0.16 x 6 = 0.96, Cliente paga 1.00, ajusteRedondeo = 0.04
+   * Fórmula: ajusteRedondeo = totalCobrado - total
+   */
+  @Column('decimal', { 
+    precision: 10, 
+    scale: 2, 
+    default: 0, 
+    transformer: decimalTransformer,
+    comment: 'Diferencia contable entre total calculado y monto efectivamente cobrado'
+  })
+  ajusteRedondeo: number;
+
   @Column('decimal', { precision: 10, scale: 2, transformer: decimalTransformer })
   total: number;
 
@@ -77,21 +92,6 @@ export class Venta {
 
   @Column('decimal', { precision: 10, scale: 2, default: 0, transformer: decimalTransformer })
   vuelto: number;
-
-  /**
-   * Ajuste de redondeo aplicado a la venta
-   * Representa la diferencia entre el total calculado y el monto efectivamente cobrado
-   * Ejemplo: Producto 0.16 x 6 = 0.96, Cliente paga 1.00, ajusteRedondeo = 0.04
-   * Fórmula: ajusteRedondeo = totalCobrado - total
-   */
-  @Column('decimal', { 
-    precision: 10, 
-    scale: 2, 
-    default: 0, 
-    transformer: decimalTransformer,
-    comment: 'Diferencia contable entre total calculado y monto efectivamente cobrado'
-  })
-  ajusteRedondeo: number;
 
   /**
    * Relación One-to-Many con VentaPago
