@@ -138,8 +138,8 @@ export class MovimientoInventarioService {
     };
   }
 
-  async findByDateRange(fechaInicio: Date, fechaFin: Date, paginationDto: PaginationDto): Promise<PaginatedResult<MovimientoInventario>> {
-    const { page, limit, skip } = paginationDto;
+  async findByDateRange(fechaInicio: Date, fechaFin: Date): Promise<PaginatedResult<MovimientoInventario>> {
+    const { page, limit, skip } = new PaginationDto();
 
     const [data, total] = await this.movimientoRepository.findAndCount({
       where: {

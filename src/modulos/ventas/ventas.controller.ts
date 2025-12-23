@@ -22,7 +22,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { DateRangeDto } from '../../common/dto/date-range.dto';
+import { DateRangeDto, PaginasRangoDto } from '../../common/dto/date-range.dto';
 
 /**
  * Controlador de Ventas
@@ -134,19 +134,13 @@ export class VentasController {
     summary: 'Obtener ventas por rango de fechas',
     description: 'Retorna un listado paginado de ventas dentro de un rango de fechas'
   })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Ventas del rango obtenidas exitosamente' })
   findByDateRange(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-    @Query() paginationDto: PaginationDto,
+    @Query() dateRangeDto: PaginasRangoDto
   ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.ventasService.findByDateRange(inicio, fin, paginationDto);
+    const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+
+    return this.ventasService.findByDateRange(fechaInicio, fechaFin);
   }
 
   /**

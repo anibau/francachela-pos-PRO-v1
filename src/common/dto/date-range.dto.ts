@@ -1,6 +1,6 @@
 import { IsOptional, IsString, Matches } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { DatePosUtil } from '../utils/date-pos.util';
 
 export class DateRangeDto {
@@ -64,3 +64,14 @@ export class DateRangeDto {
     DatePosUtil.validateDateRange(fechaInicio, fechaFin);
   }
 }
+
+export class PaginasRangoDto extends DateRangeDto {
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+}
+

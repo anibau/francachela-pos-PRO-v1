@@ -327,10 +327,9 @@ export class VentasService {
 
   async findByDateRange(
     fechaInicio: Date,
-    fechaFin: Date,
-    paginationDto: PaginationDto,
+    fechaFin: Date
   ): Promise<PaginatedResult<Venta>> {
-    const { page, limit, skip } = paginationDto;
+    const { page, limit, skip } = new PaginationDto();
 
     const [data, total] = await this.ventaRepository.findAndCount({
       where: {

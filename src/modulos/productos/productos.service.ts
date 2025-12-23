@@ -136,6 +136,29 @@ export class ProductosService {
     };
   }
 
+  async findByProveedor(proveedor: string, paginationDto: PaginationDto): Promise<PaginatedResult<Producto>> {
+    const { page, limit, skip } = paginationDto;
+
+    const [data, total] = await this.productoRepository.findAndCount({
+      where: { proveedor },
+      skip,
+      take: limit,
+      order: { productoDescripcion: 'ASC' },
+    });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
+  }
+
   async findStockBajo(): Promise<Producto[]> {
     return this.productoRepository
       .createQueryBuilder('producto')
