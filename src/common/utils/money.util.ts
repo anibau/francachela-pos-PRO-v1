@@ -150,4 +150,62 @@ export class MoneyUtil {
   static fromCents(cents: number): number {
     return this.round(cents / 100);
   }
+
+  /**
+   * Calcula el ajuste de redondeo entre el monto cobrado y el total teórico
+   * @param totalCobrado - Monto efectivamente cobrado al cliente
+   * @param totalTeorico - Total calculado de la venta
+   * @returns Ajuste de redondeo (puede ser positivo o negativo)
+   */
+  static calculateRoundingAdjustment(totalCobrado: number, totalTeorico: number): number {
+    return this.round(this.round(totalCobrado) - this.round(totalTeorico));
+  }
+
+  /**
+   * Valida que un pago con ajuste de redondeo esté dentro de tolerancia
+   * @param totalCobrado - Monto efectivamente cobrado
+   * @param totalTeorico - Total calculado de la venta
+   * @returns Objeto con validación y detalles del ajuste
+   */
+  static validatePaymentWithRounding(totalCobrado: number, totalTeorico: number): {
+    isValid: boolean;
+    ajusteRedondeo: number;
+    mensaje: string;
+  } {
+    const cobrado = this.round(totalCobrado);
+    const teorico = this.round(totalTeorico);
+    const ajusteRedondeo = this.calculateRoundingAdjustment(cobrado, teorico);
+
+    // Validar que el ajuste esté dentro de tolerancia
+    if (Math.abs(ajusteRedondeo) <= this.TOLERANCE) {
+      if (Math.abs(ajusteRedondeo) > 0.001) {
+        return {
+          isValid: true,
+          ajusteRedondeo: ajusteRedondeo,
+          mensaje: `Pago con ajuste de redondeo: S/ ${Math.abs(ajusteRedondeo).toFixed(2)}`,
+        };
+      }
+      return {
+        isValid: true,
+        ajusteRedondeo: 0,
+        mensaje: 'Pago exacto sin ajuste',
+      };
+    }
+
+    return {
+      isValid: false,
+      ajusteRedondeo: ajusteRedondeo,
+      mensaje: `Ajuste de redondeo excesivo: S/ ${Math.abs(ajusteRedondeo).toFixed(2)}. Máximo permitido: S/ ${this.TOLERANCE.toFixed(2)}`,
+    };
+  }
+
+  /**
+   * Calcula el total efectivamente cobrado incluyendo ajuste de redondeo
+   * @param totalTeorico - Total calculado de la venta
+   * @param ajusteRedondeo - Ajuste de redondeo aplicado
+   * @returns Total efectivamente cobrado
+   */
+  static calculateTotalCobrado(totalTeorico: number, ajusteRedondeo: number): number {
+    return this.round(this.round(totalTeorico) + this.round(ajusteRedondeo));
+  }
 }

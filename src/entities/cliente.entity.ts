@@ -15,7 +15,7 @@ export class Cliente {
   dni: string;
 
   @Column({ type: 'date', nullable: true })
-  fechaNacimiento: Date;
+  fechaNacimiento: string;
 
   @Column({ nullable: true })
   telefono: string;
@@ -42,16 +42,17 @@ export class Cliente {
    * Getter que calcula si hoy es el cumpleaños del cliente
    */
   get esCumpleañosHoy(): boolean {
-    if (!this.fechaNacimiento) return false;
-    
-    const hoy = new Date();
-    const cumple = new Date(this.fechaNacimiento);
-    
-    return (
-      hoy.getMonth() === cumple.getMonth() && 
-      hoy.getDate() === cumple.getDate()
-    );
-  }
+  if (!this.fechaNacimiento) return false;
+
+  const[, mes, dia]= this.fechaNacimiento.split('-').map(Number);
+  const hoy= new Date();
+  const hoyMes= hoy.getMonth()+1;
+  const hoyDia= hoy.getDate();
+
+  return mes === hoyMes && dia === hoyDia;
+}
+
+
 
   /**
    * Getter que calcula la edad actual del cliente

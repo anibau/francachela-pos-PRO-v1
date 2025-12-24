@@ -21,7 +21,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { DateRangeDto } from '../../common/dto/date-range.dto';
+import { DateRangeDto, PaginasRangoDto } from '../../common/dto/date-range.dto';
 
 @ApiTags('Caja')
 @Controller('caja')
@@ -102,11 +102,9 @@ export class CajaController {
   @Get('rango')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Obtener cajas por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD HH:mm:ss)', required: false })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD HH:mm:ss)', required: false })
   @ApiResponse({ status: 200, description: 'Cajas del rango obtenidas exitosamente' })
   @ApiResponse({ status: 400, description: 'Parámetros de fecha inválidos' })
-  async getCajasPorFecha(@Query() dateRangeDto: DateRangeDto) {
+  async getCajasPorFecha(@Query() dateRangeDto: PaginasRangoDto) {
     try {
       const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
       this.logger.log(`Obteniendo cajas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);

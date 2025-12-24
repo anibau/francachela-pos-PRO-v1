@@ -79,6 +79,14 @@ export class ProductosController {
     return this.productosService.findByCategoria(categoria, paginationDto);
   }
 
+  @Get('proveedor/:proveedor')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO, UserRole.INVENTARIOS)
+  @ApiOperation({ summary: 'Obtener productos por proveedor' })
+  @ApiResponse({ status: 200, description: 'Productos del proveedor obtenidos exitosamente' })
+  findByProveedor(@Param('proveedor') proveedor: string, @Query() paginationDto: PaginationDto) {
+    return this.productosService.findByProveedor(proveedor, paginationDto);
+  }
+
   @Get('codigo/:codigoBarra')
   @Roles(UserRole.ADMIN, UserRole.CAJERO, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Obtener producto por código de barras' })

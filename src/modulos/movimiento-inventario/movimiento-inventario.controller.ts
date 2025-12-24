@@ -16,7 +16,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole, TipoMovimiento } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { DateRangeDto } from '../../common/dto/date-range.dto';
+import { DateRangeDto, PaginasRangoDto } from '../../common/dto/date-range.dto';
 
 @ApiTags('Movimiento Inventario')
 @Controller('movimiento-inventario')
@@ -95,17 +95,12 @@ export class MovimientoInventarioController {
   @Get('rango')
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener movimientos por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'Movimientos del rango obtenidos exitosamente' })
   findByDateRange(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-    @Query() paginationDto: PaginationDto,
+   @Query() dateRangeDto: PaginasRangoDto
   ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.movimientoInventarioService.findByDateRange(inicio, fin, paginationDto);
+    const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+    return this.movimientoInventarioService.findByDateRange(fechaInicio, fechaFin);
   }
 
   @Get(':id')

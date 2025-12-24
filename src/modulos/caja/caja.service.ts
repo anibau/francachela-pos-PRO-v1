@@ -33,6 +33,12 @@ export class CajaService {
       cajero,
       estado: EstadoCaja.ABIERTA,
       fechaApertura: new Date(),
+      // Inicializar campos NOT NULL con valores por defecto
+      totalVentas: 0,
+      totalGastos: 0,
+      montoFinal: 0,
+      diferencia: 0,
+      desglosePorMetodo: {},
     });
 
     return this.cajaRepository.save(caja);
@@ -130,7 +136,8 @@ export class CajaService {
       relations: ['pagos'],
     });
 
-    const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0);
+    // Calcular total cobrado (incluye ajuste de redondeo)
+    const totalVentas = ventas.reduce((sum, venta) => sum + (venta.total + (venta.ajusteRedondeo || 0)), 0);
 
     // Desglose por método de pago usando la tabla venta_pagos
     const desglosePorMetodo = {};
