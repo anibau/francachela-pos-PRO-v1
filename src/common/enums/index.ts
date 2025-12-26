@@ -8,12 +8,9 @@ export enum EstadoDelivery {
   CANCELADO = 'CANCELADO'
 }
 
-export enum TipoPromocion {
-  PORCENTAJE = 'PORCENTAJE',
-  MONTO = 'MONTO',
-  DOS_POR_UNO = '2X1',
-  TRES_POR_DOS = '3X2'
-}
+// Importar nuevos enums del modelo unificado
+export { TipoPromocion } from './tipo-promocion.enum';
+export { TipoDescuento } from './tipo-descuento.enum';
 
 export enum UserRole {
   ADMIN = 'ADMIN',

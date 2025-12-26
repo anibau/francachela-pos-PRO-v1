@@ -28,17 +28,20 @@ export class CajaService {
       throw new BadRequestException('Ya existe una caja abierta para este cajero');
     }
 
+    // Crear objeto Caja con inicialización explícita de campos NOT NULL
+    // ANTES del spread del DTO para evitar sobrescritura con undefined
     const caja = this.cajaRepository.create({
-      ...abrirCajaDto,
-      cajero,
-      estado: EstadoCaja.ABIERTA,
-      fechaApertura: new Date(),
-      // Inicializar campos NOT NULL con valores por defecto
+      // Campos obligatorios inicializados PRIMERO
       totalVentas: 0,
       totalGastos: 0,
       montoFinal: 0,
       diferencia: 0,
       desglosePorMetodo: {},
+      estado: EstadoCaja.ABIERTA,
+      fechaApertura: new Date(),
+      cajero,
+      // Campos del DTO al final para permitir sobrescritura segura
+      ...abrirCajaDto,
     });
 
     return this.cajaRepository.save(caja);

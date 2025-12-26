@@ -744,18 +744,19 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
     const totalCobrado = montoRecibido ? MoneyUtil.round(montoRecibido) : total;
     const ajusteRedondeo = MoneyUtil.round(totalCobrado - total);
 
-    // Validar que el ajuste de redondeo esté dentro de tolerancia
-    if (Math.abs(ajusteRedondeo) > 0.09) {
+    // Validar que el ajuste de redondeo esté dentro de tolerancia (máximo 5 céntimos)
+    if (Math.abs(ajusteRedondeo) > 0.05) {
       throw new BadRequestException(
-        `Ajuste de redondeo excesivo: S/ ${Math.abs(ajusteRedondeo).toFixed(2)}. Máximo permitido: S/ 0.09`,
+        `Ajuste de redondeo excesivo: S/ ${Math.abs(ajusteRedondeo).toFixed(2)}. Máximo permitido: S/ 0.05`,
       );
     }
 
     // Puntos a otorgar (1 punto por cada sol gastado, basado en el total teórico)
     const puntosOtorgados = cliente ? Math.floor(total) : 0;
 
-    // Vuelto (totalCobrado - totalCobrado, normalmente 0 en POS con redondeo)
-    const vuelto = MoneyUtil.getChange(totalCobrado, totalCobrado);
+    // Vuelto: En POS con redondeo, normalmente es 0 porque el cliente paga exactamente totalCobrado
+    // Pero si se paga más (ej: cliente da 2 soles por compra de 1.96), calcular vuelto correcto
+    const vuelto = montoRecibido ? MoneyUtil.getChange(montoRecibido, totalCobrado) : 0;
 
     return {
       subTotal,
