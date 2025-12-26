@@ -4,8 +4,6 @@ import { DatabaseSeeder } from './database.seeder';
 import { Usuario } from '../../entities/usuario.entity';
 import { Producto } from '../../entities/producto.entity';
 import { Cliente } from '../../entities/cliente.entity';
-import { Promocion } from '../../entities/promocion.entity';
-import { Combo } from '../../entities/combo.entity';
 import { Venta } from '../../entities/venta.entity';
 import { Caja } from '../../entities/caja.entity';
 import { Gasto } from '../../entities/gasto.entity';
@@ -18,8 +16,6 @@ import { MovimientoInventario } from '../../entities/movimiento-inventario.entit
       Usuario,
       Producto,
       Cliente,
-      Promocion,
-      Combo,
       Venta,
       Caja,
       Gasto,
