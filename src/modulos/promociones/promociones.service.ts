@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual, MoreThanOrEqual, And, FindOptionsWhere, Equal } from 'typeorm';
-import { Promocion } from '../../entities/promocion.entity';
-import { TipoPromocion } from '../../common/enums';
+import { Promocion, TipoPromocion } from '../../entities/promocion.entity';
 import { CreatePromocionDto } from './dto/create-promocion.dto';
 import { UpdatePromocionDto } from './dto/update-promocion.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';

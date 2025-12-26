@@ -23,7 +23,8 @@ import { EvaluarPromocionesDto } from './dto/evaluar-promociones.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole, TipoPromocion } from '../../common/enums';
+import { UserRole } from '../../common/enums';
+import { TipoPromocion } from '../../entities/promocion.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Promociones')

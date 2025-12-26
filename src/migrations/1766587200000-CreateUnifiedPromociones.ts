@@ -155,54 +155,39 @@ export class CreateUnifiedPromociones1766587200000 implements MigrationInterface
       true,
     );
 
-    // Crear índices
-    await queryRunner.createIndex(
-      'promociones_unificadas',
-      new Index('IDX_promociones_unificadas_activo', ['activo']),
-    );
+    // Crear índices usando SQL directo
+    await queryRunner.query(`
+      CREATE INDEX "IDX_promociones_unificadas_activo" ON "promociones_unificadas" ("activo")
+    `);
 
-    await queryRunner.createIndex(
-      'promociones_unificadas',
-      new Index('IDX_promociones_unificadas_fechas', ['fecha_inicio', 'fecha_fin']),
-    );
+    await queryRunner.query(`
+      CREATE INDEX "IDX_promociones_unificadas_fechas" ON "promociones_unificadas" ("fecha_inicio", "fecha_fin")
+    `);
 
-    await queryRunner.createIndex(
-      'promociones_unificadas',
-      new Index('IDX_promociones_unificadas_tipo', ['tipo_promocion']),
-    );
+    await queryRunner.query(`
+      CREATE INDEX "IDX_promociones_unificadas_tipo" ON "promociones_unificadas" ("tipo_promocion")
+    `);
 
-    await queryRunner.createIndex(
-      'promocion_productos',
-      new Index('IDX_promocion_productos_promocion', ['promocion_id']),
-    );
+    await queryRunner.query(`
+      CREATE INDEX "IDX_promocion_productos_promocion" ON "promocion_productos" ("promocion_id")
+    `);
 
-    await queryRunner.createIndex(
-      'promocion_productos',
-      new Index('IDX_promocion_productos_producto', ['producto_id']),
-    );
+    await queryRunner.query(`
+      CREATE INDEX "IDX_promocion_productos_producto" ON "promocion_productos" ("producto_id")
+    `);
 
-    // Crear foreign keys
-    await queryRunner.createForeignKey(
-      'promocion_productos',
-      new ForeignKey({
-        columnNames: ['promocion_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'promociones_unificadas',
-        onDelete: 'CASCADE',
-        name: 'FK_promocion_productos_promocion',
-      }),
-    );
+    // Crear foreign keys usando SQL directo
+    await queryRunner.query(`
+      ALTER TABLE "promocion_productos" 
+      ADD CONSTRAINT "FK_promocion_productos_promocion" 
+      FOREIGN KEY ("promocion_id") REFERENCES "promociones_unificadas"("id") ON DELETE CASCADE
+    `);
 
-    await queryRunner.createForeignKey(
-      'promocion_productos',
-      new ForeignKey({
-        columnNames: ['producto_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'productos',
-        onDelete: 'CASCADE',
-        name: 'FK_promocion_productos_producto',
-      }),
-    );
+    await queryRunner.query(`
+      ALTER TABLE "promocion_productos" 
+      ADD CONSTRAINT "FK_promocion_productos_producto" 
+      FOREIGN KEY ("producto_id") REFERENCES "productos"("id") ON DELETE CASCADE
+    `);
 
     // Migrar datos existentes de combos a promociones unificadas
     await this.migrarCombosExistentes(queryRunner);
@@ -213,15 +198,15 @@ export class CreateUnifiedPromociones1766587200000 implements MigrationInterface
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Eliminar foreign keys
-    await queryRunner.dropForeignKey('promocion_productos', 'FK_promocion_productos_promocion');
-    await queryRunner.dropForeignKey('promocion_productos', 'FK_promocion_productos_producto');
+    await queryRunner.query(`ALTER TABLE "promocion_productos" DROP CONSTRAINT "FK_promocion_productos_promocion"`);
+    await queryRunner.query(`ALTER TABLE "promocion_productos" DROP CONSTRAINT "FK_promocion_productos_producto"`);
 
     // Eliminar índices
-    await queryRunner.dropIndex('promociones_unificadas', 'IDX_promociones_unificadas_activo');
-    await queryRunner.dropIndex('promociones_unificadas', 'IDX_promociones_unificadas_fechas');
-    await queryRunner.dropIndex('promociones_unificadas', 'IDX_promociones_unificadas_tipo');
-    await queryRunner.dropIndex('promocion_productos', 'IDX_promocion_productos_promocion');
-    await queryRunner.dropIndex('promocion_productos', 'IDX_promocion_productos_producto');
+    await queryRunner.query(`DROP INDEX "IDX_promociones_unificadas_activo"`);
+    await queryRunner.query(`DROP INDEX "IDX_promociones_unificadas_fechas"`);
+    await queryRunner.query(`DROP INDEX "IDX_promociones_unificadas_tipo"`);
+    await queryRunner.query(`DROP INDEX "IDX_promocion_productos_promocion"`);
+    await queryRunner.query(`DROP INDEX "IDX_promocion_productos_producto"`);
 
     // Eliminar tablas
     await queryRunner.dropTable('promocion_productos');

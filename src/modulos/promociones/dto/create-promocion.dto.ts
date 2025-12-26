@@ -70,4 +70,3 @@ export class CreatePromocionDto {
   @IsBoolean()
   activo?: boolean = true;
 }
-
