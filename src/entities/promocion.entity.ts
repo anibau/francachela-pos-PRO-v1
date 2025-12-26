@@ -1,7 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { TipoPromocion } from '../common/enums';
 
-
+export enum TipoPromocion {
+  PORCENTAJE = 'PORCENTAJE',
+  MONTO = 'MONTO',
+  DOS_POR_UNO = '2X1',
+  TRES_POR_DOS = '3X2',
+}
 
 @Entity('promociones')
 export class Promocion {
@@ -17,7 +21,7 @@ export class Promocion {
   @Column({
     type: 'enum',
     enum: TipoPromocion,
-    default: TipoPromocion.SIMPLE,
+    default: TipoPromocion.PORCENTAJE,
   })
   tipo: TipoPromocion;
 
@@ -51,4 +55,3 @@ export class Promocion {
   @UpdateDateColumn()
   fechaActualizacion: Date;
 }
-
