@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThanOrEqual, And } from 'typeorm';
+import { Repository, LessThanOrEqual, MoreThanOrEqual, And, FindOptionsWhere, Equal } from 'typeorm';
 import { Promocion } from '../../entities/promocion.entity';
 import { TipoPromocion } from '../../common/enums';
 import { CreatePromocionDto } from './dto/create-promocion.dto';
@@ -47,11 +47,16 @@ export class PromocionesService {
   }
 
   async findByTipo(tipo: TipoPromocion): Promise<Promocion[]> {
-    return this.promocionRepository.find({
-      where: { tipo, activo: true },
-      order: { fechaCreacion: 'DESC' },
-    });
-  }
+  const where: FindOptionsWhere<Promocion> = {
+    tipo: Equal(tipo),
+    activo: true,
+  };
+
+  return this.promocionRepository.find({
+    where,
+    order: { fechaCreacion: 'DESC' },
+  });
+}
 
   async update(id: number, updatePromocionDto: UpdatePromocionDto): Promise<Promocion> {
     await this.promocionRepository.update(id, updatePromocionDto);
@@ -89,19 +94,19 @@ export class PromocionesService {
 
     let descuento = 0;
 
-    switch (promocion.tipo) {
-      case TipoPromocion.PORCENTAJE:
-        descuento = (montoCompra * promocion.descuento) / 100;
-        break;
-      case TipoPromocion.MONTO:
-        descuento = promocion.descuento;
-        break;
-      case TipoPromocion.DOS_POR_UNO:
-      case TipoPromocion.TRES_POR_DOS:
-        // Estos se manejan a nivel de productos específicos
-        descuento = 0;
-        break;
-    }
+    // switch (promocion.tipo) {
+    //   case TipoPromocion.PORCENTAJE:
+    //     descuento = (montoCompra * promocion.descuento) / 100;
+    //     break;
+    //   case TipoPromocion.MONTO:
+    //     descuento = promocion.descuento;
+    //     break;
+    //   case TipoPromocion.DOS_POR_UNO:
+    //   case TipoPromocion.TRES_POR_DOS:
+    //     // Estos se manejan a nivel de productos específicos
+    //     descuento = 0;
+    //     break;
+    // }
 
     // Incrementar contador de usos
     await this.promocionRepository.update(promocionId, {
