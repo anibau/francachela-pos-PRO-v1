@@ -22,7 +22,7 @@ export class CreateClienteDto {
   @ApiPropertyOptional({ description: 'Fecha de nacimiento', example: '1990-05-15' })
   @IsOptional()
   @IsDateString()
-  fechaNacimiento?: Date;
+  fechaNacimiento?: string;
 
   @ApiPropertyOptional({ description: 'Teléfono del cliente', example: '987654321' })
   @IsOptional()

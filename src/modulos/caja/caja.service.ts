@@ -28,11 +28,20 @@ export class CajaService {
       throw new BadRequestException('Ya existe una caja abierta para este cajero');
     }
 
+    // Crear objeto Caja con inicialización explícita de campos NOT NULL
+    // ANTES del spread del DTO para evitar sobrescritura con undefined
     const caja = this.cajaRepository.create({
-      ...abrirCajaDto,
-      cajero,
+      // Campos obligatorios inicializados PRIMERO
+      totalVentas: 0,
+      totalGastos: 0,
+      montoFinal: 0,
+      diferencia: 0,
+      desglosePorMetodo: {},
       estado: EstadoCaja.ABIERTA,
       fechaApertura: new Date(),
+      cajero,
+      // Campos del DTO al final para permitir sobrescritura segura
+      ...abrirCajaDto,
     });
 
     return this.cajaRepository.save(caja);
@@ -130,7 +139,8 @@ export class CajaService {
       relations: ['pagos'],
     });
 
-    const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0);
+    // Calcular total cobrado (incluye ajuste de redondeo)
+    const totalVentas = ventas.reduce((sum, venta) => sum + (venta.total + (venta.ajusteRedondeo || 0)), 0);
 
     // Desglose por método de pago usando la tabla venta_pagos
     const desglosePorMetodo = {};

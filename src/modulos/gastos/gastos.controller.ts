@@ -20,7 +20,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, Usuario } from '../../entities/usuario.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { DateRangeDto } from '../../common/dto/date-range.dto';
+import { DateRangeDto, PaginasRangoDto } from '../../common/dto/date-range.dto';
 import { CategoriaGasto } from '../../common/enums';
 
 @ApiTags('Gastos')
@@ -83,17 +83,12 @@ export class GastosController {
   @Get('rango')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener gastos por rango de fechas' })
-  @ApiQuery({ name: 'fechaInicio', description: 'Fecha de inicio (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'fechaFin', description: 'Fecha de fin (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'Gastos del rango obtenidos exitosamente' })
   findByDateRange(
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-    @Query() paginationDto: PaginationDto,
-  ) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    return this.gastosService.findByDateRange(inicio, fin, paginationDto);
+    @Query() dateRangeDto: PaginasRangoDto) {
+      const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
+ 
+    return this.gastosService.findByDateRange(fechaInicio, fechaFin);
   }
 
   @Get('categoria/:categoria')

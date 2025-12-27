@@ -14,7 +14,6 @@ import { VentasModule } from './modulos/ventas/ventas.module';
 import { PromocionesModule } from './modulos/promociones/promociones.module';
 import { CajaModule } from './modulos/caja/caja.module';
 import { GastosModule } from './modulos/gastos/gastos.module';
-import { CombosModule } from './modulos/combos/combos.module';
 import { DeliveryModule } from './modulos/delivery/delivery.module';
 import { MovimientoInventarioModule } from './modulos/movimiento-inventario/movimiento-inventario.module';
 import { WhatsappModule } from './modulos/whatsapp/whatsapp.module';
@@ -51,7 +50,6 @@ import { AdminModule } from './modulos/admin/admin.module';
     PromocionesModule,
     CajaModule,
     GastosModule,
-    CombosModule,
     DeliveryModule,
     MovimientoInventarioModule,
     WhatsappModule,

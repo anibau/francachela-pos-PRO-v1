@@ -51,10 +51,18 @@ export class ClientesService {
   }
 
   async findAll(): Promise<Cliente[]> {
-    return this.clienteRepository.find({
+    const clientes= await  this.clienteRepository.find({
       where: { activo: true },
       order: { fechaRegistro: 'DESC' },
     });
+    if(!clientes || clientes.length === 0){
+      throw new NotFoundException('No se encontraron clientes');
+    }
+    return clientes.map(cliente=>({
+      ...cliente,
+      esCumpleañosHoy: cliente.esCumpleañosHoy,
+      edad: cliente.edad
+    })) as Cliente[] ;
   }
 
   async findById(id: number): Promise<Cliente> {

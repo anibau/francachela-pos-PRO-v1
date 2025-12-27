@@ -8,7 +8,7 @@ async function bootstrap() {
 
   // Configurar CORS
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'],
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080', 'https://francachela-pos-pro-front.vercel.app'],
     credentials: true,
   });
 
@@ -33,7 +33,6 @@ async function bootstrap() {
     - **👤 Clientes**: Sistema de fidelidad y puntos
     - **🛒 Ventas**: POS completo con múltiples métodos de pago
     - **🎁 Promociones**: Descuentos y ofertas especiales
-    - **🎁 Combos**: Paquetes de productos con precios especiales
     - **💰 Caja**: Control de apertura/cierre y flujo de efectivo
     - **💸 Gastos**: Registro de gastos operativos
     - **🚚 Delivery**: Gestión completa de entregas
@@ -83,7 +82,6 @@ async function bootstrap() {
     .addTag('Clientes', 'Gestión de clientes y sistema de puntos')
     .addTag('Ventas', 'Punto de venta y transacciones')
     .addTag('Promociones', 'Descuentos y ofertas especiales')
-    .addTag('Combos', 'Paquetes de productos con precios especiales')
     .addTag('Caja', 'Control de caja registradora')
     .addTag('Gastos', 'Registro de gastos operativos')
     .addTag('Delivery', 'Gestión de entregas a domicilio')

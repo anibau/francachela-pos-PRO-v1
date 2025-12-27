@@ -38,28 +38,17 @@ export class GastosService {
     return gasto;
   }
 
-  async findByDateRange(fechaInicio: Date, fechaFin: Date, paginationDto: PaginationDto): Promise<PaginatedResult<Gasto>> {
-    const { page, limit, skip } = paginationDto;
+  async findByDateRange(fechaInicio: Date, fechaFin: Date): Promise<{ data: Gasto[], total: number }> {
 
     const [data, total] = await this.gastoRepository.findAndCount({
       where: {
         fecha: Between(fechaInicio, fechaFin),
-      },
-      skip,
-      take: limit,
+      },  
       order: { fecha: 'DESC' },
     });
-
-    const totalPages = Math.ceil(total / (limit || 10));
-
     return {
       data,
-      total,
-      page: page || 1,
-      limit: limit || 10,
-      totalPages,
-      hasNextPage: (page || 1) < totalPages,
-      hasPrevPage: (page || 1) > 1,
+      total,    
     };
   }
 
