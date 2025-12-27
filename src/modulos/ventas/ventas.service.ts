@@ -745,9 +745,9 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
     const ajusteRedondeo = MoneyUtil.round(totalCobrado - total);
 
     // Validar que el ajuste de redondeo esté dentro de tolerancia (máximo 5 céntimos)
-    if (Math.abs(ajusteRedondeo) > 0.05) {
+    if (Math.abs(ajusteRedondeo) > 0.09) {
       throw new BadRequestException(
-        `Ajuste de redondeo excesivo: S/ ${Math.abs(ajusteRedondeo).toFixed(2)}. Máximo permitido: S/ 0.05`,
+        `Ajuste de redondeo excesivo: S/ ${Math.abs(ajusteRedondeo).toFixed(2)}. Máximo permitido: S/ 0.09`,
       );
     }
 

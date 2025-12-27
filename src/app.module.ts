@@ -34,7 +34,8 @@ import { AdminModule } from './modulos/admin/admin.module';
       useFactory: (
         configService: ConfigService,
       ): TypeOrmModuleOptions => {
-        const databaseUrl = configService.get<string>('database.url');
+        console.log('DATABASE_URL:', process.env.DATABASE_URL);
+        const databaseUrl = process.env.DATABASE_URL;
 
         const baseConfig: TypeOrmModuleOptions = {
           type: 'postgres',
