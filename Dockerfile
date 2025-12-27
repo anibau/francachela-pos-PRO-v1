@@ -1,7 +1,7 @@
 # =========================
 # BUILDER
 # =========================
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -19,7 +19,7 @@ RUN npm run build
 # =========================
 # RUNNER (producción)
 # =========================
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 
 RUN apk add --no-cache dumb-init
 
