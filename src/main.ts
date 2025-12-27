@@ -8,7 +8,7 @@ async function bootstrap() {
 
   // Configurar CORS
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'],
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080', 'https://francachela-pos-pro-front.vercel.app'],
     credentials: true,
   });
 
