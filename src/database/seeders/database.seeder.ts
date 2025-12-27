@@ -36,33 +36,15 @@ export class DatabaseSeeder {
     const usuarios = [
       {
         username: 'admin',
-        password: await bcrypt.hash('admin123', 10),
+        password: await bcrypt.hash('manchas123', 10),
         rol: UserRole.ADMIN,
         nombre: 'Administrador Principal'
       },
       {
         username: 'cajero1',
-        password: await bcrypt.hash('cajero123', 10),
+        password: await bcrypt.hash('manchas123', 10),
         rol: UserRole.CAJERO,
-        nombre: 'María González'
-      },
-      {
-        username: 'cajero2',
-        password: await bcrypt.hash('cajero123', 10),
-        rol: UserRole.CAJERO,
-        nombre: 'Carlos Rodríguez'
-      },
-      {
-        username: 'inventarios',
-        password: await bcrypt.hash('inv123', 10),
-        rol: UserRole.INVENTARIOS,
-        nombre: 'Ana Martínez'
-      },
-      {
-        username: 'supervisor',
-        password: await bcrypt.hash('super123', 10),
-        rol: UserRole.ADMIN,
-        nombre: 'Luis Supervisor'
+        nombre: 'Kelsy Bautista'
       }
     ];
 
