@@ -22,7 +22,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private socket: WASocket;
   private isConnected = false;
   private isConnecting = false; // Prevenir reconexiones simultáneas
-  private readonly authDir = './whatsapp-auth';
+  private readonly authDir = '/data/whatsapp-auth';
   private qrCode: string | null = null; // Almacenar QR para API
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
