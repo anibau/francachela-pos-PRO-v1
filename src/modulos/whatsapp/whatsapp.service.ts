@@ -106,12 +106,10 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         auth: state,
         printQRInTerminal: false, // Desactivado - manejamos QR manualmente
         logger: this.createLogger(),
-        browser: ['Francachela POS', 'Chrome', '120.0.6099.216'],
-        qrTimeout: 90000, // QR válido por 90 segundos (aumentado para mejor UX)
-        shouldSyncHistoryMessage: () => false, // Función requerida por tipo
-        defaultQueryTimeoutMs: 15000, // Aumentado de 10s
-        keepAliveIntervalMs: 20000, // Reducido de 30s para mantener conexión activa
-        retryRequestDelayMs: 100, // Intentar más rápido los reintentos
+        browser: ['Windows', 'Chrome', '120.0.0.0'],
+        qrTimeout: 120000, // QR válido por 5 minutos (aumentado para mejor UX)
+        defaultQueryTimeoutMs: 20000, // Aumentado de 10s
+        keepAliveIntervalMs: 25000, // Reducido de 30s para mantener conexión activa
       });
 
       // === EVENT: CONNECTION UPDATE - Cambios de estado de conexión ===
