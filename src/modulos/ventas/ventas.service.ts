@@ -752,10 +752,10 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
     }
 
     // Puntos a otorgar (1 punto por cada sol gastado, basado en el total teórico)
-    //   const puntosOtorgados = cliente ? Math.floor(total) : 0;
+    const puntosOtorgados = cliente ? Math.floor(total) : 0;
 
      // Puntos a otorgar de acuerdo al valor de puntos de cada producto
-    const puntosOtorgados = cliente ? MoneyUtil.sum(productosValidados.map(p => p.valorPuntos)) : 0;
+    //const puntosOtorgados = cliente ? MoneyUtil.sum(productosValidados.map(p => p.valorPuntos)) : 0;
 
     // Vuelto: En POS con redondeo, normalmente es 0 porque el cliente paga exactamente totalCobrado
     // Pero si se paga más (ej: cliente da 2 soles por compra de 1.96), calcular vuelto correcto
