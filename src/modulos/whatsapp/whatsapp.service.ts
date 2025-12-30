@@ -5,7 +5,6 @@ import makeWASocket, {
   useMultiFileAuthState,
   WASocket,
   fetchLatestBaileysVersion,
-  isJidBroadcast
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -22,7 +21,9 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private socket: WASocket;
   private isConnected = false;
   private isConnecting = false; // Prevenir reconexiones simultáneas
-  private readonly authDir = '/data/whatsapp-auth';
+  private readonly authDir = process.env.WHATSAPP_AUTH_DIR
+  ? '/data/whatsapp-auth'
+  : path.resolve(process.cwd(), 'whatsapp-auth');
   private qrCode: string | null = null; // Almacenar QR para API
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
@@ -74,6 +75,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async initializeWhatsApp() {
+    if (this.socket) {
+        try {
+          this.socket.end(undefined);
+        } catch {}
+         this.socket = null as any;
+       await new Promise(res => setTimeout(res, 500));
+      }
+
     // Prevenir inicializaciones simultáneas
     if (this.isConnecting) {
       this.logger.warn('Ya hay una conexión en progreso, ignorando nueva solicitud');
@@ -85,11 +94,11 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
     try {
       // Validar integridad de la sesión antes de inicializar
-      const isSessionValid = await this.validateSessionIntegrity();
+      ///const isSessionValid = await this.validateSessionIntegrity();
       
-      if (!isSessionValid) {
-        this.logger.log('Sesión corrupta detectada, iniciando con sesión limpia...');
-      }
+      // if (!isSessionValid) {
+      //   this.logger.log('Sesión corrupta detectada, iniciando con sesión limpia...');
+      // }
 
       // Crear directorio de autenticación si no existe
       if (!fs.existsSync(this.authDir)) {
@@ -155,13 +164,18 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
           
           // Manejo específico de errores
           if (errorMessage.includes('bad mac') || errorMessage.includes('mac')) {
-            this.logger.warn('❌ Error Bad MAC detectado - limpiando sesión corrupta');
-            this.clearSession();
-            this.isConnecting = false;
-            this.reconnectAttempts = 0;
-            setTimeout(() => this.initializeWhatsApp(), 3000);
-            return;
-          }
+              this.logger.warn('❌ Bad MAC detectado');
+
+              // SOLO limpiar si ya estaba conectado antes
+              if (this.isConnected) {
+                this.clearSession();
+              }
+
+              this.isConnecting = false;
+              setTimeout(() => this.initializeWhatsApp(), 5000);
+              return;
+            }
+
 
           // Código 515 - Stream Error (requiere reconexión)
           if (statusCode === 515 || errorData?.tag === 'stream:error') {
@@ -182,14 +196,15 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
             return;
           }
 
-          // Logout intencional
+          // ❌ NO borrar sesión aquí
           if (statusCode === DisconnectReason.loggedOut) {
-            this.logger.log('📴 Sesión cerrada por logout intencional');
-            this.isConnecting = false;
+            this.logger.warn('🔴 WhatsApp cerró sesión definitivamente (loggedOut)');
             this.isConnected = false;
-            this.reconnectAttempts = 0;
+            this.isConnecting = false;
+            this.qrCode = null;
             return;
           }
+
 
           // Otros errores - Intentar reconectar
           const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
@@ -614,39 +629,32 @@ ${edadText}
     }
   }
 
-  private async validateSessionIntegrity(): Promise<boolean> {
-    try {
-      // Verificar si el directorio de autenticación existe
-      if (!fs.existsSync(this.authDir)) {
-        return true; // Nueva sesión, válida
-      }
+  // private async validateSessionIntegrity(): Promise<boolean> {
+  //   try {
+  //     // Verificar si el directorio de autenticación existe
+  //     if (!fs.existsSync(this.authDir)) {
+  //       return true; // Nueva sesión, válida
+  //     }
 
-      const files = fs.readdirSync(this.authDir);
-      if (files.length === 0) {
-        return true; // Sesión vacía, válida
-      }
+  //     const files = fs.readdirSync(this.authDir);
+  //     if (files.length === 0) {
+  //       return true; // Sesión vacía, válida
+  //     }
 
-      // Intentar leer y validar creds.json
-      const credsPath = path.join(this.authDir, 'creds.json');
-      if (fs.existsSync(credsPath)) {
-        const creds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
-        
-        // Verificar campos necesarios de credenciales
-        if (!creds.signedIdentityKey || !creds.signedPreKey) {
-          this.logger.warn('Credenciales incompletas detectadas');
-          fs.rmSync(this.authDir, { recursive: true, force: true });
-          return false;
-        }
-      }
+  //     // Intentar leer y validar creds.json
+  //     const credsPath = path.join(this.authDir, 'creds.json');
+  //     if (fs.existsSync(credsPath)) {
+  //       const creds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
+  //     }
 
-      return true;
-    } catch (error) {
-      this.logger.error('Error validando integridad de sesión:', error);
-      // En caso de error, asumir sesión corrupta y limpiar
-      this.clearSession();
-      return false;
-    }
-  }
+  //     return true;
+  //   } catch (error) {
+  //     this.logger.error('Error validando integridad de sesión:', error);
+  //     // En caso de error, asumir sesión corrupta y limpiar
+  //     this.clearSession();
+  //     return false;
+  //   }
+  // }
 
   private clearSession(): void {
     try {
