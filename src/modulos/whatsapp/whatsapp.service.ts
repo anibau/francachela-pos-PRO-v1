@@ -443,7 +443,6 @@ ${productosTexto}
 
 🆔 Tu código de cliente: ${cliente.codigoCorto}
 ⭐ Empieza a acumular puntos con cada compra
-🎁 Canjea tus puntos por descuentos especiales
 
 🌐 https://francachela-licores.github.io/francachela/
 
@@ -468,7 +467,6 @@ ${productosTexto}
 🆔 Código: ${codigoCorto}
 ⭐ Puntos disponibles: ${puntosAcumulados}
 
-🎁 Usa tus puntos para obtener descuentos
 🌐 Visita: https://francachela-licores.github.io/francachela/
 
 ¡Gracias por ser cliente! 🍻`;
@@ -628,7 +626,8 @@ ${edadText}
       return { success: false, message: error?.message || 'Error al reconectar' };
     }
   }
-
+  // 🎁 Usa tus puntos para obtener descuentos
+  // 🎁 Canjea tus puntos por descuentos especiales
   // private async validateSessionIntegrity(): Promise<boolean> {
   //   try {
   //     // Verificar si el directorio de autenticación existe

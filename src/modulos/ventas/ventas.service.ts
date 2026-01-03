@@ -490,7 +490,7 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
     });
 
     const totalVentas = ventas.length;
-    const totalMonto = MoneyUtil.sum(ventas.map(v => v.total));
+    const totalMonto = MoneyUtil.sum(ventas.map(v => v.totalCobrado));
 
     return { ventas, totalVentas, totalMonto };
   }
@@ -504,8 +504,8 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
         .createQueryBuilder('venta')
         .select([
           'COUNT(venta.id)::int as "totalVentas"',
-          'COALESCE(SUM(venta.total), 0)::numeric as "totalMonto"',
-          'COALESCE(AVG(venta.total), 0)::numeric as "promedioVenta"',
+          'COALESCE(SUM(venta.total + COALESCE(venta.ajusteRedondeo, 0)), 0)::numeric as "totalMonto"',
+          'COALESCE(AVG(venta.total + COALESCE(venta.ajusteRedondeo, 0)), 0)::numeric as "promedioVenta"',
           'COALESCE(SUM(venta.descuento), 0)::numeric as "totalDescuentos"',
           'COALESCE(SUM(venta.recargoExtra), 0)::numeric as "totalRecargos"',
           'COALESCE(SUM(venta.puntosOtorgados), 0)::int as "totalPuntosOtorgados"',
@@ -560,12 +560,12 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
   .select([
     "COALESCE(venta.tipoCompra, 'LOCAL') as \"tipoCompra\"",
     'COUNT(venta.id)::int as "cantidadVentas"',
-    'COALESCE(SUM(venta.total), 0)::numeric as "montoTotal"',
+    'COALESCE(SUM(venta.total + COALESCE(venta.ajusteRedondeo, 0)), 0)::numeric as "montoTotal"',
   ])
   .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
   .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
   .groupBy("COALESCE(venta.tipoCompra, 'LOCAL')")
-   .orderBy('SUM(venta.total)', 'DESC') // ✅
+   .orderBy('SUM(venta.total + COALESCE(venta.ajusteRedondeo, 0))', 'DESC') // ✅
   .getRawMany();
 
 

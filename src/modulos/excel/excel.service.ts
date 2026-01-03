@@ -176,6 +176,17 @@ export class ExcelService {
       return sum + total;
     }, 0);
 
+    const totalAjustes = ventasValidas.reduce((sum, v) => {
+      const ajuste = Number(v.ajusteRedondeo) || 0;
+      return sum + ajuste;
+    }, 0);
+
+     const totalTotalCobrado = ventasValidas.reduce((sum, v) => {
+      const totalCobrado = Number(v.totalCobrado) || 0;
+      return sum + totalCobrado;
+    }, 0);
+
+
     const totalPuntosOtorgados = ventasValidas.reduce(
       (sum, v) => sum + (v.puntosOtorgados || 0),
       0
@@ -191,7 +202,9 @@ export class ExcelService {
       totalDescuento,
       totalRecargoExtra,
       totalTotal,
-      '', '', '', 
+      totalAjustes,
+      totalTotalCobrado,
+      '', 
       totalPuntosOtorgados,
       totalPuntosUsados
     ]);
