@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Cliente } from '../../entities/cliente.entity';
 import { ClientePuntosMovimiento, TipoMovimientoPuntos } from '../../entities/cliente-puntos-movimiento.entity';
+import { Producto } from '../../entities/producto.entity';
 import { MoneyUtil } from '../../common/utils/money.util';
 
 /**
@@ -18,6 +19,8 @@ export class PuntosService {
     private clienteRepository: Repository<Cliente>,
     @InjectRepository(ClientePuntosMovimiento)
     private movimientosRepository: Repository<ClientePuntosMovimiento>,
+    @InjectRepository(Producto)
+    private productoRepository: Repository<Producto>,
     private dataSource: DataSource,
   ) {}
 
@@ -252,4 +255,171 @@ export class PuntosService {
       }
     };
   }
+
+  /**
+   * Evalúa puntos disponibles y calcula descuento real sin persistir datos
+   * Elimina lógica del frontend y centraliza validaciones
+   * @param clienteId ID del cliente
+   * @param items Items de la venta para calcular límites
+   * @param puntosSolicitados Puntos que quiere usar el cliente
+   * @returns Evaluación completa de puntos
+   */
+  async evaluarPuntos(
+    clienteId: number,
+    items: Array<{ productoId: number; cantidad: number }>,
+    puntosSolicitados: number
+  ): Promise<{
+    puntosDisponibles: number;
+    puntosAceptados: number;
+    descuento: number;
+    mensaje: string;
+    limitePorProductos: number;
+    detalleProductos: Array<{
+      productoId: number;
+      nombre: string;
+      precio: number;
+      cantidad: number;
+      subtotal: number;
+      puntosMaximos: number;
+    }>;
+  }> {
+    // Validar cliente y obtener puntos disponibles
+    const cliente = await this.clienteRepository.findOne({ 
+      where: { id: clienteId } 
+    });
+
+    if (!cliente) {
+      throw new BadRequestException('Cliente no encontrado');
+    }
+
+    const puntosDisponibles = cliente.puntosAcumulados;
+
+    // Obtener información de productos
+    const productosIds = items.map(item => item.productoId);
+    const productos = await this.productoRepository.findByIds(productosIds);
+
+    if (productos.length !== productosIds.length) {
+      throw new BadRequestException('Algunos productos no fueron encontrados');
+    }
+
+    // Calcular límites por productos
+    let limitePorProductos = 0;
+    const detalleProductos: Array<{
+      productoId: number;
+      nombre: string;
+      precio: number;
+      cantidad: number;
+      subtotal: number;
+      puntosMaximos: number;
+    }> = [];
+
+    for (const item of items) {
+      const producto = productos.find(p => p.id === item.productoId);
+      if (!producto) continue;
+
+      const subtotal = producto.precio * item.cantidad;
+      
+      // Límite: máximo 50% del valor del producto puede ser pagado con puntos
+      const puntosMaximosProducto = Math.floor((subtotal * 0.5) / this.VALOR_PUNTO);
+      limitePorProductos += puntosMaximosProducto;
+
+      detalleProductos.push({
+        productoId: producto.id,
+        nombre: producto.productoDescripcion,
+        precio: producto.precio,
+        cantidad: item.cantidad,
+        subtotal,
+        puntosMaximos: puntosMaximosProducto,
+      });
+    }
+
+    // Determinar puntos finales que se pueden usar
+    const limiteFinal = Math.min(
+      puntosDisponibles,
+      limitePorProductos,
+      puntosSolicitados
+    );
+
+    // Calcular descuento real
+    const descuento = MoneyUtil.round(limiteFinal * this.VALOR_PUNTO);
+
+    // Generar mensaje explicativo
+    let mensaje = '';
+    if (limiteFinal === puntosSolicitados) {
+      mensaje = `Se pueden usar todos los ${puntosSolicitados} puntos solicitados`;
+    } else if (limiteFinal === puntosDisponibles) {
+      mensaje = `Solo tienes ${puntosDisponibles} puntos disponibles`;
+    } else if (limiteFinal === limitePorProductos) {
+      mensaje = `Solo se pueden usar ${limitePorProductos} puntos para estos productos (máximo 50% del valor)`;
+    } else {
+      mensaje = `Solo se pueden usar ${limiteFinal} puntos`;
+    }
+
+    return {
+      puntosDisponibles,
+      puntosAceptados: limiteFinal,
+      descuento,
+      mensaje,
+      limitePorProductos,
+      detalleProductos,
+    };
+  }
+
+  /**
+   * Ajustar puntos de cliente manualmente (solo administradores)
+   * @param clienteId ID del cliente
+   * @param puntos Cantidad de puntos a ajustar (positivo/negativo)
+   * @param motivo Razón del ajuste
+   * @param usuario Usuario que realiza el ajuste
+   * @param tipo Tipo de movimiento
+   */
+  async ajustarPuntos(
+    clienteId: number,
+    puntos: number,
+    motivo: string,
+    usuario: string,
+    tipo: TipoMovimientoPuntos
+  ): Promise<{ mensaje: string; puntosFinales: number }> {
+    // Validar cliente
+    const cliente = await this.clienteRepository.findOne({
+      where: { id: clienteId }
+    });
+
+    if (!cliente) {
+      throw new BadRequestException(`Cliente con ID ${clienteId} no encontrado`);
+    }
+
+    // Validar que no genere saldo negativo
+    const puntosFinales = cliente.puntosAcumulados + puntos;
+    if (puntosFinales < 0) {
+      throw new BadRequestException(
+        `El ajuste generaría saldo negativo. Puntos actuales: ${cliente.puntosAcumulados}, Ajuste: ${puntos}`
+      );
+    }
+
+    // Actualizar puntos del cliente
+    cliente.puntosAcumulados = puntosFinales;
+    await this.clienteRepository.save(cliente);
+
+    // Registrar movimiento
+    const movimiento = this.movimientosRepository.create({
+      clienteId: cliente.id,
+      puntos: puntos, // Mantener signo original
+      tipo,
+      motivo: motivo,
+      valorMonetario: Math.abs(puntos) * this.VALOR_PUNTO,
+      registradoPor: usuario,
+      saldoAnterior: cliente.puntosAcumulados - puntos,
+      saldoPosterior: puntosFinales,
+    });
+
+    await this.movimientosRepository.save(movimiento);
+
+    return {
+      mensaje: `Ajuste realizado exitosamente. ${puntos > 0 ? 'Agregados' : 'Descontados'} ${Math.abs(puntos)} puntos`,
+      puntosFinales,
+    };
+  }
+
+
 }
