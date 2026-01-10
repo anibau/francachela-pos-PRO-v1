@@ -1074,4 +1074,143 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
       this.logger.warn(`⚠️ Excepción enviando WhatsApp: ${error.message}`);
     }
   }
+
+  /**
+   * Previsualiza una venta sin persistir datos
+   * Calcula subtotal, promociones, puntos, redondeo y vuelto
+   * Elimina lógica del frontend y centraliza cálculos
+   */
+  async previewVenta(
+    items: Array<{ productoId: number; cantidad: number }>,
+    clienteId?: number,
+    puntosAUsar?: number,
+    montoRecibido?: number
+  ): Promise<{
+    subtotal: number;
+    descuentoPromos: number;
+    descuentoPuntos: number;
+    ajusteRedondeo: number;
+    total: number;
+    totalCobrado: number;
+    vuelto: number;
+    puntosOtorgados: number;
+    detalleItems: Array<{
+      productoId: number;
+      nombre: string;
+      precio: number;
+      cantidad: number;
+      subtotal: number;
+    }>;
+    validaciones: {
+      stockSuficiente: boolean;
+      puntosValidos: boolean;
+      mensajes: string[];
+    };
+  }> {
+    const validaciones = {
+      stockSuficiente: true,
+      puntosValidos: true,
+      mensajes: [] as string[]
+    };
+
+    // 1. Validar y obtener productos
+    const productosIds = items.map(item => item.productoId);
+    const productos = await this.productosService.findByIds(productosIds);
+
+    if (productos.length !== productosIds.length) {
+      throw new BadRequestException('Algunos productos no fueron encontrados');
+    }
+
+    // 2. Calcular subtotal y validar stock
+    let subtotal = 0;
+    const detalleItems: Array<{
+      productoId: number;
+      nombre: string;
+      precio: number;
+      cantidad: number;
+      subtotal: number;
+    }> = [];
+
+    for (const item of items) {
+      const producto = productos.find(p => p.id === item.productoId);
+      if (!producto) continue;
+
+      // Validar stock
+      if (producto.cantidadActual < item.cantidad) {
+        validaciones.stockSuficiente = false;
+        validaciones.mensajes.push(
+          `Stock insuficiente para ${producto.productoDescripcion}. Disponible: ${producto.cantidadActual}, Requerido: ${item.cantidad}`
+        );
+      }
+
+      const subtotalItem = MoneyUtil.round(producto.precio * item.cantidad);
+      subtotal += subtotalItem;
+
+      detalleItems.push({
+        productoId: producto.id,
+        nombre: producto.productoDescripcion,
+        precio: producto.precio,
+        cantidad: item.cantidad,
+        subtotal: subtotalItem,
+      });
+    }
+
+    subtotal = MoneyUtil.round(subtotal);
+
+    // 3. Aplicar promociones (TODO: implementar cuando exista PromocionesService)
+    const descuentoPromos = 0;
+
+    // 4. Aplicar descuento por puntos
+    let descuentoPuntos = 0;
+    let puntosFinales = 0;
+
+    if (clienteId && puntosAUsar && puntosAUsar > 0) {
+      try {
+        // Usar PuntosService para validar puntos (si está disponible)
+        const VALOR_PUNTO = 0.10;
+        
+        // Validación básica de límite (50% del subtotal)
+        const limitePuntos = Math.floor((subtotal * 0.5) / VALOR_PUNTO);
+        puntosFinales = Math.min(puntosAUsar, limitePuntos);
+        
+        descuentoPuntos = MoneyUtil.round(puntosFinales * VALOR_PUNTO);
+        
+        if (puntosFinales < puntosAUsar) {
+          validaciones.puntosValidos = false;
+          validaciones.mensajes.push(
+            `Solo se pueden usar ${puntosFinales} puntos para estos productos (máximo 50% del valor)`
+          );
+        }
+      } catch (error) {
+        validaciones.puntosValidos = false;
+        validaciones.mensajes.push(`Error validando puntos: ${error.message}`);
+      }
+    }
+
+    // 5. Calcular total después de descuentos
+    const totalDespuesDescuentos = MoneyUtil.round(subtotal - descuentoPromos - descuentoPuntos);
+
+    // 6. Calcular ajuste de redondeo y total cobrado
+    const ajusteRedondeo = MoneyUtil.calculateRoundingAdjustment(totalDespuesDescuentos, totalDespuesDescuentos);
+    const totalCobrado = MoneyUtil.round(totalDespuesDescuentos + ajusteRedondeo);
+
+    // 7. Calcular vuelto
+    const vuelto = montoRecibido ? MoneyUtil.round(montoRecibido - totalCobrado) : 0;
+
+    // 8. Calcular puntos otorgados (1 punto por cada S/ 10)
+    const puntosOtorgados = Math.floor(totalCobrado / 10);
+
+    return {
+      subtotal,
+      descuentoPromos,
+      descuentoPuntos,
+      ajusteRedondeo,
+      total: totalDespuesDescuentos,
+      totalCobrado,
+      vuelto,
+      puntosOtorgados,
+      detalleItems,
+      validaciones,
+    };
+  }
 }
