@@ -17,6 +17,7 @@ import { CreateVentaDto } from './dto/create-venta.dto';
 import { PreviewVentaDto } from './dto/preview-venta.dto';
 import { UpdateVentaComentarioDto } from './dto/update-venta-comentario.dto';
 import { SalesCutoffDto } from './dto/sales-cutoff.dto';
+import { ConsultaVentaDto, ConsultaVentaResponseDto } from './dto/consulta-venta.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -97,6 +98,30 @@ export class VentasController {
       previewVentaDto.puntosAUsar,
       previewVentaDto.montoRecibido
     );
+  }
+
+  /**
+   * Consultar cálculos de venta sin persistir
+   * - Valida productos y stock
+   * - Calcula totales, puntos y redondeo
+   * - Retorna desglose completo sin crear venta
+   * - Permite al frontend obtener datos calculados del backend
+   */
+  @Post('consulta')
+  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Consultar cálculos de venta',
+    description: 'Obtiene todos los cálculos de una venta sin persistir. Elimina duplicación de lógica entre frontend y backend.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Cálculos obtenidos exitosamente',
+    type: ConsultaVentaResponseDto
+  })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o stock insuficiente' })
+  async consultarCalculosVenta(@Body() consultaDto: ConsultaVentaDto): Promise<ConsultaVentaResponseDto> {
+    return await this.ventasService.consultarCalculosVenta(consultaDto);
   }
 
   /**
