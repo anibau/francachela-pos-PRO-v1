@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import { Cliente } from '../../entities/cliente.entity';
 import { ClientePuntosMovimiento, TipoMovimientoPuntos } from '../../entities/cliente-puntos-movimiento.entity';
 import { Producto } from '../../entities/producto.entity';
@@ -72,53 +72,46 @@ export class PuntosService {
    * @returns Movimiento creado
    */
   async registrarMovimiento(
-    clienteId: number,
-    tipo: TipoMovimientoPuntos,
-    puntos: number,
-    motivo: string,
-    registradoPor: string,
-    ventaId?: number
-  ): Promise<ClientePuntosMovimiento> {
-    return await this.dataSource.transaction(async manager => {
-      // Obtener cliente con lock para evitar condiciones de carrera
-      const cliente = await manager.findOne(Cliente, {
-        where: { id: clienteId },
-        lock: { mode: 'pessimistic_write' }
-      });
+  manager: EntityManager, // ← SE INYECTA
+  clienteId: number,
+  tipo: TipoMovimientoPuntos,
+  puntos: number,
+  motivo: string,
+  registradoPor: string,
+  ventaId?: number
+): Promise<ClientePuntosMovimiento> {
+  const cliente = await manager.findOne(Cliente, {
+    where: { id: clienteId },
+    lock: { mode: 'pessimistic_write' }
+  });
 
-      if (!cliente) {
-        throw new BadRequestException('Cliente no encontrado');
-      }
+  if (!cliente) throw new BadRequestException('Cliente no encontrado');
 
-      const saldoAnterior = cliente.puntosAcumulados;
+  const saldoAnterior = cliente.puntosAcumulados;
 
-      // Validar que no quede en negativo
-      if (saldoAnterior + puntos < 0) {
-        throw new BadRequestException(
-          `Puntos insuficientes. Disponible: ${saldoAnterior}, Requerido: ${Math.abs(puntos)}`
-        );
-      }
-
-      // Actualizar saldo del cliente
-      const saldoPosterior = saldoAnterior + puntos;
-      await manager.update(Cliente, clienteId, { puntosAcumulados: saldoPosterior });
-
-      // Crear registro del movimiento
-      const movimiento = manager.create(ClientePuntosMovimiento, {
-        clienteId,
-        tipo,
-        puntos,
-        valorMonetario: MoneyUtil.round(Math.abs(puntos) * this.VALOR_PUNTO),
-        motivo,
-        ventaId,
-        registradoPor,
-        saldoAnterior,
-        saldoPosterior,
-      });
-
-      return await manager.save(movimiento);
-    });
+  if (saldoAnterior + puntos < 0) {
+    throw new BadRequestException('Puntos insuficientes');
   }
+
+  const saldoPosterior = saldoAnterior + puntos;
+
+  await manager.update(Cliente, clienteId, { puntosAcumulados: saldoPosterior });
+
+  const movimiento = manager.create(ClientePuntosMovimiento, {
+    clienteId,
+    tipo,
+    puntos,
+    valorMonetario: MoneyUtil.round(Math.abs(puntos) * this.VALOR_PUNTO),
+    motivo,
+    ventaId,
+    registradoPor,
+    saldoAnterior,
+    saldoPosterior,
+  });
+
+  return await manager.save(movimiento);
+}
+
 
   /**
    * Acumula puntos por una venta
@@ -129,12 +122,14 @@ export class PuntosService {
    * @returns Movimiento creado
    */
   async acumularPuntosPorVenta(
+    manager: EntityManager,
     clienteId: number,
     puntosGanados: number,
     ventaId: number,
     registradoPor: string
   ): Promise<ClientePuntosMovimiento> {
     return await this.registrarMovimiento(
+      manager,
       clienteId,
       TipoMovimientoPuntos.ACUMULACION,
       puntosGanados,
@@ -153,20 +148,22 @@ export class PuntosService {
    * @returns Movimiento creado
    */
   async canjearPuntosEnVenta(
-    clienteId: number,
-    puntosUsados: number,
-    ventaId: number,
-    registradoPor: string
-  ): Promise<ClientePuntosMovimiento> {
-    return await this.registrarMovimiento(
-      clienteId,
-      TipoMovimientoPuntos.CANJE,
-      -puntosUsados, // Negativo porque se restan
-      `Canje de puntos en venta #${ventaId}`,
-      registradoPor,
-      ventaId
-    );
-  }
+  manager: EntityManager,
+  clienteId: number,
+  puntosUsados: number,
+  ventaId: number,
+  registradoPor: string
+) {
+  return this.registrarMovimiento(
+    manager,
+    clienteId,
+    TipoMovimientoPuntos.CANJE,
+    -puntosUsados,
+    `Canje de puntos en venta #${ventaId}`,
+    registradoPor,
+    ventaId
+  );
+}
 
   /**
    * Anula movimientos de puntos por anulación de venta
@@ -175,33 +172,34 @@ export class PuntosService {
    * @returns Movimientos de reverso creados
    */
   async anularMovimientosPorVenta(
-    ventaId: number,
-    registradoPor: string
-  ): Promise<ClientePuntosMovimiento[]> {
-    // Buscar todos los movimientos de esta venta
-    const movimientosOriginales = await this.movimientosRepository.find({
-      where: { ventaId },
-      relations: ['cliente']
-    });
+  manager: EntityManager,
+  ventaId: number,
+  registradoPor: string
+): Promise<ClientePuntosMovimiento[]> {
 
-    const movimientosReverso: ClientePuntosMovimiento[] = [];
+  const movimientosOriginales = await manager.find(ClientePuntosMovimiento, {
+    where: { ventaId }
+  });
 
-    for (const movimientoOriginal of movimientosOriginales) {
-      // Crear movimiento de reverso (signo opuesto)
-      const movimientoReverso = await this.registrarMovimiento(
-        movimientoOriginal.clienteId,
-        TipoMovimientoPuntos.REVERSO,
-        -movimientoOriginal.puntos, // Signo opuesto
-        `Reverso por anulación de venta #${ventaId} - ${movimientoOriginal.motivo}`,
-        registradoPor,
-        ventaId
-      );
+  const movimientosReverso: ClientePuntosMovimiento[] = [];
 
-      movimientosReverso.push(movimientoReverso);
-    }
+  for (const movimientoOriginal of movimientosOriginales) {
+    const movimientoReverso = await this.registrarMovimiento(
+      manager,                              // 🔥 ahora es transaccional
+      movimientoOriginal.clienteId,
+      TipoMovimientoPuntos.REVERSO,
+      -movimientoOriginal.puntos,
+      `Reverso por anulación de venta #${ventaId} - ${movimientoOriginal.motivo}`,
+      registradoPor,
+      ventaId
+    );
 
-    return movimientosReverso;
+    movimientosReverso.push(movimientoReverso);
   }
+
+  return movimientosReverso;
+}
+
 
   /**
    * Obtiene el historial de movimientos de un cliente

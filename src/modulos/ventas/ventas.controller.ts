@@ -96,7 +96,9 @@ export class VentasController {
       previewVentaDto.items,
       previewVentaDto.clienteId,
       previewVentaDto.puntosAUsar,
-      previewVentaDto.montoRecibido
+      previewVentaDto.montoRecibido,
+      previewVentaDto.descuento ?? 0,
+      previewVentaDto.recargoExtra ?? 0
     );
   }
 

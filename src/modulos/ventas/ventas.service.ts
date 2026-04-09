@@ -239,6 +239,7 @@ export class VentasService {
         if (createVentaDto.puntosUsados && createVentaDto.puntosUsados > 0) {
           try {
             await this.puntosService.canjearPuntosEnVenta(
+              queryRunner.manager,
               cliente.id,
               createVentaDto.puntosUsados,
               ventaGuardada.id,
@@ -254,6 +255,7 @@ export class VentasService {
         if (resumen.puntosOtorgados > 0) {
           try {
             await this.puntosService.acumularPuntosPorVenta(
+              queryRunner.manager,
               cliente.id,
               resumen.puntosOtorgados,
               ventaGuardada.id,
@@ -308,7 +310,7 @@ export class VentasService {
 
     // ===== 1. VALIDAR PRODUCTOS =====
     const productosValidados = await this._validarYProcesarProductos(
-      consultaDto.productos.map(p => ({
+      consultaDto.items.map(p => ({
         productoId: p.productoId,
         cantidad: p.cantidad
       })),
@@ -324,7 +326,7 @@ export class VentasService {
     // ===== 3. VALIDACIONES CENTRALIZADAS =====
     // Validar stock suficiente
     await this.validationService.validarStockMultiple(
-      consultaDto.productos.map(item => ({
+      consultaDto.items.map(item => ({
         productoId: item.productoId,
         cantidad: item.cantidad
       }))
@@ -339,7 +341,7 @@ export class VentasService {
       
       // Validar límite de puntos por productos
       await this.validationService.validarLimitePuntosPorProductos(
-        consultaDto.productos.map(item => ({
+        consultaDto.items.map(item => ({
           productoId: item.productoId,
           cantidad: item.cantidad
         })),
@@ -353,7 +355,7 @@ export class VentasService {
       consultaDto.descuento || 0,
       consultaDto.recargoExtra || 0,
       consultaDto.puntosUsados || 0,
-      consultaDto.montoPagado
+      consultaDto.montoRecibido
     );
 
     // ===== 5. GENERAR VALIDACIONES Y ALERTAS =====
@@ -1234,7 +1236,9 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
     items: Array<{ productoId: number; cantidad: number }>,
     clienteId?: number,
     puntosAUsar?: number,
-    montoRecibido?: number
+    montoRecibido?: number,
+    descuentoManual: number = 0,
+    recargoExtra: number = 0
   ): Promise<{
     subtotal: number;
     descuentoPromos: number;
@@ -1306,10 +1310,9 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
     }
 
     subtotal = MoneyUtil.round(subtotal);
-
+    
     // 3. Aplicar promociones (TODO: implementar cuando exista PromocionesService)
     const descuentoPromos = 0;
-
     // 4. Aplicar descuento por puntos
     let descuentoPuntos = 0;
     let puntosFinales = 0;
@@ -1336,18 +1339,24 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
         validaciones.mensajes.push(`Error validando puntos: ${error.message}`);
       }
     }
+      // 5. Calcular descuento total REAL
+      const descuentoTotal = MoneyUtil.round(
+        descuentoPromos + descuentoPuntos + (descuentoManual || 0)
+      );
 
-    // 5. Calcular total después de descuentos
-    const totalDespuesDescuentos = MoneyUtil.round(subtotal - descuentoPromos - descuentoPuntos);
+    // 6. Calcular total después de descuentos
+    const totalDespuesDescuentos = MoneyUtil.round(
+      subtotal - descuentoTotal + (recargoExtra || 0)
+    );
 
-    // 6. Calcular ajuste de redondeo y total cobrado
+    // 7. Calcular ajuste de redondeo y total cobrado
     const ajusteRedondeo = MoneyUtil.calculateRoundingAdjustment(totalDespuesDescuentos, totalDespuesDescuentos);
     const totalCobrado = MoneyUtil.round(totalDespuesDescuentos + ajusteRedondeo);
 
-    // 7. Calcular vuelto
+    // 8. Calcular vuelto
     const vuelto = montoRecibido ? MoneyUtil.round(montoRecibido - totalCobrado) : 0;
 
-    // 8. Calcular puntos otorgados (1 punto por cada S/ 10)
+    // 9. Calcular puntos otorgados (1 punto por cada S/ 10)
     const puntosOtorgados = Math.floor(totalCobrado / 10);
 
     return {

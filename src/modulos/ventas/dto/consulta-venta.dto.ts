@@ -29,7 +29,7 @@ export class ConsultaVentaDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ProductoConsultaDto)
-  productos: ProductoConsultaDto[];
+  items: ProductoConsultaDto[];
 
   @ApiProperty({
     description: 'Descuento aplicado',
@@ -66,7 +66,7 @@ export class ConsultaVentaDto {
     example: 20.00
   })
   @IsNumber()
-  montoPagado: number;
+  montoRecibido: number;
 }
 
 /**

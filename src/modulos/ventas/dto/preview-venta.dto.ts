@@ -54,6 +54,30 @@ export class PreviewVentaDto {
   @Min(0, { message: 'Los puntos no pueden ser negativos' })
   puntosAUsar?: number;
 
+    @ApiProperty({
+    description: 'Descuento manual aplicado a la venta',
+    example: 5.00,
+    default: 0,
+    required: false
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'El descuento debe ser un número' })
+  @Min(0, { message: 'El descuento no puede ser negativo' })
+  descuento?: number;
+
+
+  @ApiProperty({
+    description: 'Recargo extra aplicado a la venta',
+    example: 2.00,
+    default: 0,
+    required: false
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'El recargo debe ser un número' })
+  @Min(0, { message: 'El recargo no puede ser negativo' })
+  recargoExtra?: number;
+
+
   @ApiProperty({
     description: 'Monto que entrega el cliente',
     example: 35.00

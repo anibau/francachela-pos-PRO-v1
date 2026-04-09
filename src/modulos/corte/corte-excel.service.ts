@@ -34,6 +34,30 @@ export class CorteExcelService {
     return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
+  private n(value: any): number {
+  if (typeof value !== 'number' || isNaN(value)) return 0;
+  return value;
+  }
+
+  private formatLocalDate(date: string | Date): string {
+    if (!date) return '';
+
+    // Si viene como "2026-01-01"
+    if (typeof date === 'string' && date.length === 10) {
+      const [y, m, d] = date.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    // Si viene como Date
+    const dt = new Date(date);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    return `${d}/${m}/${y}`;
+  }
+
+
+
   /**
    * Crea la hoja de resumen general
    */
@@ -50,7 +74,12 @@ export class CorteExcelService {
     // Título principal
     worksheet.mergeCells('A1:C1');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = `CORTE DE CAJA - ${corte.periodo.fechaInicio} al ${corte.periodo.fechaFin}`;
+    const fi = this.formatLocalDate(corte.periodo.fechaInicio);
+    const ff = this.formatLocalDate(corte.periodo.fechaFin);
+
+
+    titleCell.value = `CORTE DE CAJA - ${fi} al ${ff}`;
+
     titleCell.font = { bold: true, size: 16 };
     titleCell.alignment = { horizontal: 'center' };
     titleCell.fill = {
@@ -70,23 +99,33 @@ export class CorteExcelService {
       corte.ventas.cantidad,
       `${corte.ventas.cantidad} ventas`
     ]);
+
+    const totalBruto = this.n(corte.ventas.totalBruto);
+    const ajustes = this.n(corte.ventas.ajustesRedondeo);
+    const totalCobrado = this.n(corte.ventas.totalCobrado);
+    const totalEntradas = this.n(corte.entradas.total);
+    const ingresosTotales = this.n(corte.rentabilidad.ingresosTotales);
+    const gastosTotales = this.n(corte.gastos.total);
+    const gastosTotalesFinal = this.n(corte.rentabilidad.gastosTotales);
+    const utilidadNeta = this.n(corte.rentabilidad.utilidadNeta);
+    const margenUtilidad = this.n(corte.rentabilidad.margenUtilidad);
     
     worksheet.addRow([
       'Ventas - Total Bruto',
-      corte.ventas.totalBruto,
-      `S/ ${corte.ventas.totalBruto.toFixed(2)}`
+      totalBruto,
+      `S/ ${totalBruto.toFixed(2)}`
     ]);
     
     worksheet.addRow([
       'Ventas - Ajustes Redondeo',
-      corte.ventas.ajustesRedondeo,
-      `S/ ${corte.ventas.ajustesRedondeo.toFixed(2)}`
+      ajustes,
+      `S/ ${ajustes.toFixed(2)}`
     ]);
     
     worksheet.addRow([
       'Ventas - Total Cobrado',
-      corte.ventas.totalCobrado,
-      `S/ ${corte.ventas.totalCobrado.toFixed(2)}`
+      totalCobrado,
+      `S/ ${totalCobrado.toFixed(2)}`
     ]);
 
     worksheet.addRow([
@@ -97,14 +136,14 @@ export class CorteExcelService {
     
     worksheet.addRow([
       'Entradas - Total',
-      corte.entradas.total,
-      `S/ ${corte.entradas.total.toFixed(2)}`
+      totalEntradas,
+      `S/ ${totalEntradas.toFixed(2)}`
     ]);
 
     worksheet.addRow([
       'TOTAL INGRESOS',
-      corte.rentabilidad.ingresosTotales,
-      `S/ ${corte.rentabilidad.ingresosTotales.toFixed(2)}`
+      ingresosTotales,
+      `S/ ${ingresosTotales.toFixed(2)}`
     ]).font = { bold: true };
 
     // Espacio
@@ -121,14 +160,14 @@ export class CorteExcelService {
     
     worksheet.addRow([
       'Gastos - Total',
-      corte.gastos.total,
-      `S/ ${corte.gastos.total.toFixed(2)}`
+      gastosTotales,
+      `S/ ${gastosTotales.toFixed(2)}`
     ]);
 
     worksheet.addRow([
       'TOTAL EGRESOS',
-      corte.rentabilidad.gastosTotales,
-      `S/ ${corte.rentabilidad.gastosTotales.toFixed(2)}`
+      gastosTotalesFinal,
+      `S/ ${gastosTotalesFinal.toFixed(2)}`
     ]).font = { bold: true };
 
     // Espacio
@@ -139,14 +178,14 @@ export class CorteExcelService {
     
     worksheet.addRow([
       'Utilidad Neta',
-      corte.rentabilidad.utilidadNeta,
-      `S/ ${corte.rentabilidad.utilidadNeta.toFixed(2)}`
+      utilidadNeta,
+      `S/ ${utilidadNeta.toFixed(2)}`
     ]).font = { bold: true };
     
     worksheet.addRow([
       'Margen de Utilidad',
-      corte.rentabilidad.margenUtilidad,
-      `${corte.rentabilidad.margenUtilidad.toFixed(2)}%`
+      margenUtilidad,
+      `${margenUtilidad.toFixed(2)}%`
     ]);
 
     // Espacio
@@ -292,19 +331,10 @@ export class CorteExcelService {
   /**
    * Aplica estilos generales a la hoja
    */
-  private aplicarEstilosGenerales(worksheet: ExcelJS.Worksheet) {
-    // Estilo para headers
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE7E6E6' }
-    };
 
-    // Bordes para todas las celdas con datos
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 0) {
-        row.eachCell((cell) => {
+    private aplicarEstilosGenerales(worksheet: ExcelJS.Worksheet) {
+      worksheet.eachRow(row => {
+        row.eachCell(cell => {
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -312,11 +342,16 @@ export class CorteExcelService {
             right: { style: 'thin' }
           };
         });
-      }
-    });
+      });
 
-    // Formato de números para columnas de montos
-    worksheet.getColumn('valor').numFmt = '#,##0.00';
-    worksheet.getColumn('monto').numFmt = '#,##0.00';
+      // Aplica formato solo a columnas que realmente existen
+      worksheet.columns.forEach((col, index) => {
+        const header = String(col.header || '').toLowerCase();
+
+        if (header.includes('valor') || header.includes('monto')) {
+          worksheet.getColumn(index + 1).numFmt = '#,##0.00';
+        }
+      });
+    }
+
   }
-}
