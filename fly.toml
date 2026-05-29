@@ -16,7 +16,7 @@ primary_region = "iad"   # ✅ MISMA REGIÓN QUE EL VOLUMEN
 
   # 🔒 CRÍTICO PARA BAILEYS
   auto_stop_machines = false
-  auto_start_machines = true
+  auto_start_machines = false
   min_machines_running = 1
   processes = ["app"]
 
@@ -25,6 +25,6 @@ primary_region = "iad"   # ✅ MISMA REGIÓN QUE EL VOLUMEN
   destination = "/data"
 
 [[vm]]
-  memory = "1gb"
+  memory = "256"
   cpu_kind = "shared"
   cpus = 1
