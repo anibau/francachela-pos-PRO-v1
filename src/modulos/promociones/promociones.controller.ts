@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Promociones')
 @Controller('promociones')
@@ -47,8 +48,8 @@ export class PromocionesController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todas las promociones unificadas' })
   @ApiResponse({ status: 200, description: 'Lista de promociones unificadas obtenida exitosamente' })
-  findAllUnificadas() {
-    return this.promocionesUnificadasService.findAll();
+  findAllUnificadas(@Query() paginationDto: PaginationDto) {
+    return this.promocionesUnificadasService.findAll(paginationDto);
   }
 
   @Get('unificadas/activas')

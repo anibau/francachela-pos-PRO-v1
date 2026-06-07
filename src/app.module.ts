@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -7,6 +8,7 @@ import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import * as entities from './entities';
 import { AuthModule } from './modulos/auth/auth.module';
+import { JwtAuthGuard } from './modulos/auth/guards/jwt-auth.guard';
 import { UsersModule } from './modulos/users/users.module';
 import { ProductosModule } from './modulos/productos/productos.module';
 import { ClientesModule } from './modulos/clientes/clientes.module';
@@ -91,6 +93,12 @@ import { CorteModule } from './modulos/corte/corte.module';
     CorteModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

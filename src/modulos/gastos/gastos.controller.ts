@@ -42,8 +42,8 @@ export class GastosController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los gastos' })
   @ApiResponse({ status: 200, description: 'Lista de gastos obtenida exitosamente' })
-  findAll() {
-    return this.gastosService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.gastosService.findAll(paginationDto);
   }
 
   @Get('hoy')
@@ -88,7 +88,10 @@ export class GastosController {
     @Query() dateRangeDto: PaginasRangoDto) {
       const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
  
-    return this.gastosService.findByDateRange(fechaInicio, fechaFin);
+    const paginationDto = new PaginationDto();
+    paginationDto.page = dateRangeDto.page;
+    paginationDto.limit = dateRangeDto.limit;
+    return this.gastosService.findByDateRange(fechaInicio, fechaFin, paginationDto);
   }
 
   @Get('categoria/:categoria')

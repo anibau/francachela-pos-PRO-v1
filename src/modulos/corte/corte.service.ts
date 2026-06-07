@@ -4,6 +4,7 @@ import { Repository, Between } from 'typeorm';
 import { Venta } from '../../entities/venta.entity';
 import { EstadoVenta } from '../../common/enums';
 import { Gasto } from '../../entities/gasto.entity';
+import { VentaPago } from '../../entities/venta-pago.entity';
 import { EntradasService } from '../entradas/entradas.service';
 import { MoneyUtil } from '../../common/utils/money.util';
 
@@ -48,49 +49,31 @@ export class CorteService {
     private ventaRepository: Repository<Venta>,
     @InjectRepository(Gasto)
     private gastoRepository: Repository<Gasto>,
+    @InjectRepository(VentaPago)
+    private ventaPagoRepository: Repository<VentaPago>,
     private entradasService: EntradasService,
   ) {}
 
-  /**
-   * Calcula el corte de caja completo con contabilidad real
-   * @param fechaInicio Fecha de inicio
-   * @param fechaFin Fecha de fin
-   * @returns Resumen completo del corte
-   */
-  async calcularCorteCompleto(fechaInicio: Date, fechaFin: Date): Promise<ResumenCorte> {
-    // Obtener ventas del período
-    const ventas = await this.ventaRepository.find({
-      where: {
-        fecha: Between(fechaInicio, fechaFin),
-        estado: EstadoVenta.COMPLETADO,
-      },
-      relations: ['pagos'],
-    });
+  async calcularCorteCompleto(
+    fechaInicio: Date,
+    fechaFin: Date,
+  ): Promise<ResumenCorte> {
+    const [resumenVentas, resumenEntradas, resumenGastos] = await Promise.all([
+      this.calcularResumenVentasAgregado(fechaInicio, fechaFin),
+      this.entradasService.getResumenAgregado(fechaInicio, fechaFin),
+      this.calcularResumenGastosAgregado(fechaInicio, fechaFin),
+    ]);
 
-    // Obtener entradas del período
-    const entradas = await this.entradasService.findByDateRange(fechaInicio, fechaFin);
-
-    // Obtener gastos del período
-    const gastos = await this.gastoRepository.find({
-      where: {
-        fecha: Between(fechaInicio, fechaFin),
-      },
-    });
-
-    // Calcular totales de ventas
-    const resumenVentas = this.calcularResumenVentas(ventas);
-    
-    // Calcular totales de entradas
-    const resumenEntradas = this.calcularResumenEntradas(entradas);
-    
-    // Calcular totales de gastos
-    const resumenGastos = this.calcularResumenGastos(gastos);
-
-    // Calcular rentabilidad real
-    const ingresosTotales = MoneyUtil.sum([resumenVentas.totalCobrado, resumenEntradas.total]);
+    const ingresosTotales = MoneyUtil.sum([
+      resumenVentas.totalCobrado,
+      resumenEntradas.total,
+    ]);
     const gastosTotales = resumenGastos.total;
     const utilidadNeta = MoneyUtil.round(ingresosTotales - gastosTotales);
-    const margenUtilidad = ingresosTotales > 0 ? MoneyUtil.round((utilidadNeta / ingresosTotales) * 100) : 0;
+    const margenUtilidad =
+      ingresosTotales > 0
+        ? MoneyUtil.round((utilidadNeta / ingresosTotales) * 100)
+        : 0;
 
     return {
       periodo: {
@@ -109,150 +92,134 @@ export class CorteService {
     };
   }
 
-  /**
-   * Calcula resumen de ventas incluyendo ajustes de redondeo
-   * @param ventas Lista de ventas
-   * @returns Resumen de ventas
-   */
-  private calcularResumenVentas(ventas: Venta[]) {
-    const cantidad = ventas.length;
-    
-    // Total bruto (suma de totales teóricos)
-    const totalBruto = MoneyUtil.sum(ventas.map(v => v.total));
-    
-    // Total cobrado (incluye ajustes de redondeo)
-    const totalCobrado = MoneyUtil.sum(ventas.map(v => v.total + (v.ajusteRedondeo || 0)));
-    
-    // Total de ajustes de redondeo
-    const ajustesRedondeo = MoneyUtil.sum(ventas.map(v => v.ajusteRedondeo || 0));
+  private async calcularResumenVentasAgregado(fechaInicio: Date, fechaFin: Date) {
+    const ventasAgg = await this.ventaRepository
+      .createQueryBuilder('venta')
+      .select('COUNT(venta.id)', 'cantidad')
+      .addSelect('SUM(venta.total)', 'totalBruto')
+      .addSelect(
+        'SUM(venta.total + COALESCE(venta.ajusteRedondeo, 0))',
+        'totalCobrado',
+      )
+      .addSelect('SUM(COALESCE(venta.ajusteRedondeo, 0))', 'ajustesRedondeo')
+      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', {
+        fechaInicio,
+        fechaFin,
+      })
+      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+      .getRawOne();
 
-    // Desglose por método de pago
+    const desgloseRows = await this.ventaPagoRepository
+      .createQueryBuilder('pago')
+      .innerJoin('pago.venta', 'venta')
+      .select('pago.metodoPago', 'metodo')
+      .addSelect('SUM(pago.monto)', 'total')
+      .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', {
+        fechaInicio,
+        fechaFin,
+      })
+      .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+      .groupBy('pago.metodoPago')
+      .getRawMany();
+
     const desglosePorMetodo: Record<string, number> = {};
-    
-    ventas.forEach(venta => {
-      if (venta.pagos && venta.pagos.length > 0) {
-        venta.pagos.forEach(pago => {
-          const metodo = pago.metodoPago;
-          if (!desglosePorMetodo[metodo]) {
-            desglosePorMetodo[metodo] = 0;
-          }
-          desglosePorMetodo[metodo] = MoneyUtil.sum([desglosePorMetodo[metodo], pago.monto]);
-        });
-      } else {
-        // Si no hay pagos registrados, asumir efectivo por el total cobrado
-        const metodo = 'EFECTIVO';
-        if (!desglosePorMetodo[metodo]) {
-          desglosePorMetodo[metodo] = 0;
-        }
-        desglosePorMetodo[metodo] = MoneyUtil.sum([
-          desglosePorMetodo[metodo], 
-          venta.total + (venta.ajusteRedondeo || 0)
-        ]);
-      }
+    desgloseRows.forEach((row) => {
+      desglosePorMetodo[row.metodo] = MoneyUtil.round(parseFloat(row.total) || 0);
     });
 
+    const totalCobrado = MoneyUtil.round(parseFloat(ventasAgg.totalCobrado) || 0);
+    const totalPagos = MoneyUtil.sum(Object.values(desglosePorMetodo));
+
+    if (totalPagos === 0 && totalCobrado > 0) {
+      desglosePorMetodo.EFECTIVO = totalCobrado;
+    }
+
     return {
-      cantidad,
-      totalBruto,
+      cantidad: parseInt(ventasAgg.cantidad, 10) || 0,
+      totalBruto: MoneyUtil.round(parseFloat(ventasAgg.totalBruto) || 0),
       totalCobrado,
-      ajustesRedondeo,
+      ajustesRedondeo: MoneyUtil.round(parseFloat(ventasAgg.ajustesRedondeo) || 0),
       desglosePorMetodo,
     };
   }
 
-  /**
-   * Calcula resumen de entradas
-   * @param entradas Lista de entradas
-   * @returns Resumen de entradas
-   */
-  private calcularResumenEntradas(entradas: any[]) {
-    const cantidad = entradas.length;
-    const total = MoneyUtil.sum(entradas.map(e => e.monto));
-
-    // Agrupar por categoría
-    const porCategoria: Record<string, number> = {};
-    entradas.forEach(entrada => {
-      const categoria = entrada.categoria || 'SIN_CATEGORIA';
-      if (!porCategoria[categoria]) {
-        porCategoria[categoria] = 0;
-      }
-      porCategoria[categoria] = MoneyUtil.sum([porCategoria[categoria], entrada.monto]);
-    });
-
-    return {
-      cantidad,
-      total,
-      porCategoria,
-    };
-  }
-
-  /**
-   * Calcula resumen de gastos
-   * @param gastos Lista de gastos
-   * @returns Resumen de gastos
-   */
-  private calcularResumenGastos(gastos: Gasto[]) {
-    const cantidad = gastos.length;
-    const total = MoneyUtil.sum(gastos.map(g => g.monto));
-
-    // Agrupar por categoría
-    const porCategoria: Record<string, number> = {};
-    gastos.forEach(gasto => {
-      const categoria = gasto.categoria || 'SIN_CATEGORIA';
-      if (!porCategoria[categoria]) {
-        porCategoria[categoria] = 0;
-      }
-      porCategoria[categoria] = MoneyUtil.sum([porCategoria[categoria], gasto.monto]);
-    });
-
-    return {
-      cantidad,
-      total,
-      porCategoria,
-    };
-  }
-
-  /**
-   * Obtiene estadísticas rápidas para dashboard
-   * @param fechaInicio Fecha de inicio
-   * @param fechaFin Fecha de fin
-   * @returns Estadísticas resumidas
-   */
-  async obtenerEstadisticasRapidas(fechaInicio: Date, fechaFin: Date) {
-    const [
-      totalVentas,
-      totalEntradas,
-      totalGastos,
-      cantidadVentas,
-    ] = await Promise.all([
-      this.ventaRepository
-        .createQueryBuilder('venta')
-        .select('SUM(venta.total + COALESCE(venta.ajusteRedondeo, 0))', 'total')
-        .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
-        .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
-        .getRawOne(),
-      
-      this.entradasService.calcularTotalPorRango(fechaInicio, fechaFin),
-      
+  private async calcularResumenGastosAgregado(fechaInicio: Date, fechaFin: Date) {
+    const [cantidad, totalResult, porCategoriaRows] = await Promise.all([
+      this.gastoRepository.count({
+        where: { fecha: Between(fechaInicio, fechaFin) },
+      }),
       this.gastoRepository
         .createQueryBuilder('gasto')
         .select('SUM(gasto.monto)', 'total')
-        .where('gasto.fecha BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin })
+        .where('gasto.fecha BETWEEN :fechaInicio AND :fechaFin', {
+          fechaInicio,
+          fechaFin,
+        })
         .getRawOne(),
-      
-      this.ventaRepository.count({
-        where: {
-          fecha: Between(fechaInicio, fechaFin),
-          estado: EstadoVenta.COMPLETADO,
-        },
-      }),
+      this.gastoRepository
+        .createQueryBuilder('gasto')
+        .select('COALESCE(gasto.categoria, :sinCategoria)', 'categoria')
+        .addSelect('SUM(gasto.monto)', 'total')
+        .where('gasto.fecha BETWEEN :fechaInicio AND :fechaFin', {
+          fechaInicio,
+          fechaFin,
+        })
+        .groupBy('gasto.categoria')
+        .setParameter('sinCategoria', 'SIN_CATEGORIA')
+        .getRawMany(),
     ]);
+
+    const porCategoria: Record<string, number> = {};
+    porCategoriaRows.forEach((row) => {
+      porCategoria[row.categoria || 'SIN_CATEGORIA'] = MoneyUtil.round(
+        parseFloat(row.total) || 0,
+      );
+    });
+
+    return {
+      cantidad,
+      total: MoneyUtil.round(parseFloat(totalResult.total) || 0),
+      porCategoria,
+    };
+  }
+
+  async obtenerEstadisticasRapidas(fechaInicio: Date, fechaFin: Date) {
+    const [totalVentas, totalEntradas, totalGastos, cantidadVentas] =
+      await Promise.all([
+        this.ventaRepository
+          .createQueryBuilder('venta')
+          .select('SUM(venta.total + COALESCE(venta.ajusteRedondeo, 0))', 'total')
+          .where('venta.fecha BETWEEN :fechaInicio AND :fechaFin', {
+            fechaInicio,
+            fechaFin,
+          })
+          .andWhere('venta.estado = :estado', { estado: EstadoVenta.COMPLETADO })
+          .getRawOne(),
+
+        this.entradasService.calcularTotalPorRango(fechaInicio, fechaFin),
+
+        this.gastoRepository
+          .createQueryBuilder('gasto')
+          .select('SUM(gasto.monto)', 'total')
+          .where('gasto.fecha BETWEEN :fechaInicio AND :fechaFin', {
+            fechaInicio,
+            fechaFin,
+          })
+          .getRawOne(),
+
+        this.ventaRepository.count({
+          where: {
+            fecha: Between(fechaInicio, fechaFin),
+            estado: EstadoVenta.COMPLETADO,
+          },
+        }),
+      ]);
 
     const ingresosTotales = MoneyUtil.sum([
       parseFloat(totalVentas.total) || 0,
       totalEntradas,
     ]);
-    
+
     const gastosTotales = parseFloat(totalGastos.total) || 0;
     const utilidadNeta = MoneyUtil.round(ingresosTotales - gastosTotales);
 
@@ -261,7 +228,10 @@ export class CorteService {
       gastosTotales: MoneyUtil.round(gastosTotales),
       utilidadNeta,
       cantidadVentas,
-      promedioVenta: cantidadVentas > 0 ? MoneyUtil.round(ingresosTotales / cantidadVentas) : 0,
+      promedioVenta:
+        cantidadVentas > 0
+          ? MoneyUtil.round(ingresosTotales / cantidadVentas)
+          : 0,
     };
   }
 }

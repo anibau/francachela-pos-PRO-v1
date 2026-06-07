@@ -1,4 +1,13 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import makeWASocket, { 
   ConnectionState, 
   DisconnectReason, 
@@ -289,26 +298,43 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  async sendMessage(sendMessageDto: SendMessageDto): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendMessage(
+    sendMessageDto: SendMessageDto,
+    options?: { throwOnError?: boolean },
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const throwOnError = options?.throwOnError ?? false;
+
+    const fail = (message: string, status: 'bad' | 'unavailable' | 'internal' = 'bad') => {
+      if (throwOnError) {
+        if (status === 'unavailable') {
+          throw new ServiceUnavailableException(message);
+        }
+        if (status === 'internal') {
+          throw new InternalServerErrorException(message);
+        }
+        throw new BadRequestException(message);
+      }
+      return { success: false, error: message };
+    };
+
     try {
       if (!this.isConnected) {
         this.logger.warn('Intento de envío sin conexión. Estado: isConnected=' + this.isConnected);
-        return { success: false, error: 'WhatsApp no está conectado. Escanea el QR primero.' };
+        return fail('WhatsApp no está conectado. Escanea el QR primero.', 'unavailable');
       }
 
       if (!this.socket) {
         this.logger.error('Socket es null pero isConnected=true');
         this.isConnected = false;
-        return { success: false, error: 'Socket WhatsApp no inicializado' };
+        return fail('Socket WhatsApp no inicializado', 'unavailable');
       }
 
-      // Validar número
       if (!sendMessageDto.phone || sendMessageDto.phone.length < 10) {
-        return { success: false, error: 'Número de teléfono inválido' };
+        return fail('Número de teléfono inválido');
       }
 
       if (!sendMessageDto.message || sendMessageDto.message.trim().length === 0) {
-        return { success: false, error: 'El mensaje no puede estar vacío' };
+        return fail('El mensaje no puede estar vacío');
       }
 
       // Formatear JID (Jabber ID)
@@ -337,18 +363,15 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         }
 
         this.logger.error(`❌ Error enviando mensaje a ${sendMessageDto.phone}: ${errorMsg}`);
-        return { 
-          success: false, 
-          error: errorMsg 
-        };
+        return fail(errorMsg, 'internal');
       }
 
     } catch (error) {
+      if (error instanceof BadRequestException || error instanceof ServiceUnavailableException || error instanceof InternalServerErrorException) {
+        throw error;
+      }
       this.logger.error(`❌ Error enviando mensaje: ${error?.message}`);
-      return { 
-        success: false, 
-        error: error?.message || 'Error desconocido al enviar mensaje' 
-      };
+      return fail(error?.message || 'Error desconocido al enviar mensaje', 'internal');
     }
   }
 

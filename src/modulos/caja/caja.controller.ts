@@ -85,8 +85,8 @@ export class CajaController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener historial de cajas' })
   @ApiResponse({ status: 200, description: 'Historial de cajas obtenido exitosamente' })
-  findAll() {
-    return this.cajaService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.cajaService.findAll(paginationDto);
   }
 
   @Get('actual')
@@ -136,7 +136,14 @@ export class CajaController {
       const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
       this.logger.log(`Obteniendo cajas desde ${fechaInicio.toISOString()} hasta ${fechaFin.toISOString()}`);
       
-      return await this.cajaService.getCajasPorFecha(fechaInicio, fechaFin);
+      const paginationDto = new PaginationDto();
+      paginationDto.page = dateRangeDto.page;
+      paginationDto.limit = dateRangeDto.limit;
+      return await this.cajaService.getCajasPorFecha(
+        fechaInicio,
+        fechaFin,
+        paginationDto,
+      );
     } catch (error) {
       this.logger.error('Error obteniendo cajas por fecha:', error);
       throw new BadRequestException('Error procesando parámetros de fecha: ' + error.message);

@@ -24,10 +24,26 @@ export class GastosService {
     return this.gastoRepository.save(gasto);
   }
 
-  async findAll(): Promise<Gasto[]> {
-    return this.gastoRepository.find({
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Gasto>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.gastoRepository.findAndCount({
       order: { fecha: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async findById(id: number): Promise<Gasto> {
@@ -38,17 +54,32 @@ export class GastosService {
     return gasto;
   }
 
-  async findByDateRange(fechaInicio: Date, fechaFin: Date): Promise<{ data: Gasto[], total: number }> {
+  async findByDateRange(
+    fechaInicio: Date,
+    fechaFin: Date,
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<Gasto>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
 
     const [data, total] = await this.gastoRepository.findAndCount({
       where: {
         fecha: Between(fechaInicio, fechaFin),
-      },  
+      },
+      skip,
+      take: limit,
       order: { fecha: 'DESC' },
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
     return {
       data,
-      total,    
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
     };
   }
 

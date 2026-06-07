@@ -18,7 +18,10 @@ export class MovimientoInventarioService {
     private productoRepository: Repository<Producto>,
   ) {}
 
-  async create(createMovimientoDto: CreateMovimientoDto): Promise<MovimientoInventario> {
+  async create(
+    createMovimientoDto: CreateMovimientoDto,
+    cajero: string,
+  ): Promise<MovimientoInventario> {
     // Buscar el producto por código de barras
     const producto = await this.productoRepository.findOne({
       where: { codigoBarra: createMovimientoDto.codigoBarra }
@@ -57,7 +60,7 @@ export class MovimientoInventarioService {
       cantidad: createMovimientoDto.cantidad,
       costo: createMovimientoDto.costo,
       precioVenta: createMovimientoDto.precioVenta,
-      cajero: createMovimientoDto.cajero,
+      cajero,
       proveedor: createMovimientoDto.proveedor,
       descripcion: producto.productoDescripcion,
       existenciaAnterior: producto.cantidadActual,
@@ -78,10 +81,28 @@ export class MovimientoInventarioService {
     return this.movimientoRepository.save(movimiento);
   }
 
-  async findAll(): Promise<MovimientoInventario[]> {
-    return this.movimientoRepository.find({
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<MovimientoInventario>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.movimientoRepository.findAndCount({
       order: { hora: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async findById(id: number): Promise<MovimientoInventario> {
@@ -138,8 +159,12 @@ export class MovimientoInventarioService {
     };
   }
 
-  async findByDateRange(fechaInicio: Date, fechaFin: Date): Promise<PaginatedResult<MovimientoInventario>> {
-    const { page, limit, skip } = new PaginationDto();
+  async findByDateRange(
+    fechaInicio: Date,
+    fechaFin: Date,
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<MovimientoInventario>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
 
     const [data, total] = await this.movimientoRepository.findAndCount({
       where: {
@@ -259,9 +284,8 @@ export class MovimientoInventarioService {
       codigoBarra,
       tipo: TipoMovimiento.SALIDA,
       cantidad,
-      costo: 0, // Se obtendrá del producto
+      costo: 0,
       precioVenta,
-      cajero,
     };
 
     // Obtener el costo del producto
@@ -273,7 +297,7 @@ export class MovimientoInventarioService {
       createMovimientoDto.costo = producto.costo;
     }
 
-    return this.create(createMovimientoDto);
+    return this.create(createMovimientoDto, cajero);
   }
 
   async registrarEntrada(
@@ -290,11 +314,10 @@ export class MovimientoInventarioService {
       cantidad,
       costo,
       precioVenta,
-      cajero,
       proveedor,
     };
 
-    return this.create(createMovimientoDto);
+    return this.create(createMovimientoDto, cajero);
   }
 
   async registrarAjuste(
@@ -310,9 +333,8 @@ export class MovimientoInventarioService {
       cantidad: nuevaCantidad,
       costo,
       precioVenta,
-      cajero,
     };
 
-    return this.create(createMovimientoDto);
+    return this.create(createMovimientoDto, cajero);
   }
 }

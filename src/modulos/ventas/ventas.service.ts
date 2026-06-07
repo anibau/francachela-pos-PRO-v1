@@ -228,6 +228,12 @@ export class VentasService {
         );
         this.logger.debug(`✓ Stock descontado para ${productosValidados.length} productos`);
       } catch (error) {
+        if (
+          error instanceof BadRequestException ||
+          error instanceof NotFoundException
+        ) {
+          throw error;
+        }
         throw new InternalServerErrorException(
           `Error descontando stock: ${error.message}`,
         );
@@ -247,7 +253,15 @@ export class VentasService {
             );
             this.logger.debug(`✓ Puntos canjeados: -${createVentaDto.puntosUsados}`);
           } catch (error) {
-            throw new InternalServerErrorException(`Error canjeando puntos: ${error.message}`);
+            if (
+              error instanceof BadRequestException ||
+              error instanceof NotFoundException
+            ) {
+              throw error;
+            }
+            throw new InternalServerErrorException(
+              `Error canjeando puntos: ${error.message}`,
+            );
           }
         }
 
@@ -263,7 +277,15 @@ export class VentasService {
             );
             this.logger.debug(`✓ Puntos acumulados: +${resumen.puntosOtorgados}`);
           } catch (error) {
-            throw new InternalServerErrorException(`Error acumulando puntos: ${error.message}`);
+            if (
+              error instanceof BadRequestException ||
+              error instanceof NotFoundException
+            ) {
+              throw error;
+            }
+            throw new InternalServerErrorException(
+              `Error acumulando puntos: ${error.message}`,
+            );
           }
         }
       }
@@ -415,11 +437,27 @@ export class VentasService {
     return response;
   }
 
-  async findAll(): Promise<Venta[]> {
-    return this.ventaRepository.find({
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Venta>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.ventaRepository.findAndCount({
       relations: ['cliente', 'pagos'],
       order: { fecha: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async findById(id: number): Promise<Venta> {
@@ -474,9 +512,10 @@ export class VentasService {
 
   async findByDateRange(
     fechaInicio: Date,
-    fechaFin: Date
+    fechaFin: Date,
+    paginationDto?: PaginationDto,
   ): Promise<PaginatedResult<Venta>> {
-    const { page, limit, skip } = new PaginationDto();
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
 
     const [data, total] = await this.ventaRepository.findAndCount({
       where: {
@@ -803,11 +842,13 @@ async anularVenta(id: number, cajero: string): Promise<Venta> {
   ): Promise<ProductoValidado[]> {
     let subTotal = 0;
     const productosValidados: ProductoValidado[] = [];
+    const productoIds = listaProductos.map((item) => item.productoId);
+    const productos = await this.productosService.findByIds(productoIds);
+    const productoMap = new Map(productos.map((producto) => [producto.id, producto]));
 
     for (const item of listaProductos) {
-      const producto = await this.productosService.findById(item.productoId);
+      const producto = productoMap.get(item.productoId);
 
-      // Validar que el producto exista
       if (!producto) {
         throw new NotFoundException(`Producto con ID ${item.productoId} no encontrado`);
       }

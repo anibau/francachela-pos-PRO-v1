@@ -17,6 +17,11 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole, TipoMovimiento } from '../../common/enums';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { DateRangeDto, PaginasRangoDto } from '../../common/dto/date-range.dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Usuario } from '../../entities/usuario.entity';
+import { RegistrarEntradaDto } from './dto/registrar-entrada.dto';
+import { RegistrarAjusteDto } from './dto/registrar-ajuste.dto';
+import { RegistrarVentaMovimientoDto } from './dto/registrar-venta-movimiento.dto';
 
 @ApiTags('Movimiento Inventario')
 @Controller('movimiento-inventario')
@@ -30,16 +35,22 @@ export class MovimientoInventarioController {
   @ApiOperation({ summary: 'Crear nuevo movimiento de inventario' })
   @ApiResponse({ status: 201, description: 'Movimiento creado exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos o stock insuficiente' })
-  create(@Body() createMovimientoDto: CreateMovimientoDto) {
-    return this.movimientoInventarioService.create(createMovimientoDto);
+  create(
+    @Body() createMovimientoDto: CreateMovimientoDto,
+    @CurrentUser() user: Usuario,
+  ) {
+    return this.movimientoInventarioService.create(
+      createMovimientoDto,
+      user.username,
+    );
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los movimientos de inventario' })
   @ApiResponse({ status: 200, description: 'Lista de movimientos obtenida exitosamente' })
-  findAll() {
-    return this.movimientoInventarioService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.movimientoInventarioService.findAll(paginationDto);
   }
 
   @Get('hoy')
@@ -100,7 +111,14 @@ export class MovimientoInventarioController {
    @Query() dateRangeDto: PaginasRangoDto
   ) {
     const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
-    return this.movimientoInventarioService.findByDateRange(fechaInicio, fechaFin);
+    const paginationDto = new PaginationDto();
+    paginationDto.page = dateRangeDto.page;
+    paginationDto.limit = dateRangeDto.limit;
+    return this.movimientoInventarioService.findByDateRange(
+      fechaInicio,
+      fechaFin,
+      paginationDto,
+    );
   }
 
   @Get(':id')
@@ -116,20 +134,16 @@ export class MovimientoInventarioController {
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Registrar entrada de mercancía' })
   @ApiResponse({ status: 201, description: 'Entrada registrada exitosamente' })
-  registrarEntrada(@Body() body: {
-    codigoBarra: string;
-    cantidad: number;
-    costo: number;
-    precioVenta: number;
-    cajero: string;
-    proveedor?: string;
-  }) {
+  registrarEntrada(
+    @Body() body: RegistrarEntradaDto,
+    @CurrentUser() user: Usuario,
+  ) {
     return this.movimientoInventarioService.registrarEntrada(
       body.codigoBarra,
       body.cantidad,
       body.costo,
       body.precioVenta,
-      body.cajero,
+      user.username,
       body.proveedor,
     );
   }
@@ -138,19 +152,16 @@ export class MovimientoInventarioController {
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Registrar ajuste de inventario' })
   @ApiResponse({ status: 201, description: 'Ajuste registrado exitosamente' })
-  registrarAjuste(@Body() body: {
-    codigoBarra: string;
-    nuevaCantidad: number;
-    costo: number;
-    precioVenta: number;
-    cajero: string;
-  }) {
+  registrarAjuste(
+    @Body() body: RegistrarAjusteDto,
+    @CurrentUser() user: Usuario,
+  ) {
     return this.movimientoInventarioService.registrarAjuste(
       body.codigoBarra,
       body.nuevaCantidad,
       body.costo,
       body.precioVenta,
-      body.cajero,
+      user.username,
     );
   }
 
@@ -158,17 +169,15 @@ export class MovimientoInventarioController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Registrar salida por venta' })
   @ApiResponse({ status: 201, description: 'Venta registrada exitosamente' })
-  registrarVenta(@Body() body: {
-    codigoBarra: string;
-    cantidad: number;
-    precioVenta: number;
-    cajero: string;
-  }) {
+  registrarVenta(
+    @Body() body: RegistrarVentaMovimientoDto,
+    @CurrentUser() user: Usuario,
+  ) {
     return this.movimientoInventarioService.registrarVenta(
       body.codigoBarra,
       body.cantidad,
       body.precioVenta,
-      body.cajero,
+      user.username,
     );
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import { Producto } from '../../entities/producto.entity';
 import { MovimientoInventario } from '../../entities/movimiento-inventario.entity';
 import { TipoMovimiento } from '../../common/enums';
@@ -63,10 +63,26 @@ export class ProductosService {
     }
   }
 
-  async findAll(): Promise<Producto[]> {
-    return this.productoRepository.find({
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Producto>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.productoRepository.findAndCount({
       order: { fechaCreacion: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async findById(id: number): Promise<Producto> {
@@ -78,7 +94,10 @@ export class ProductosService {
   }
 
   async findByIds(ids: number[]): Promise<Producto[]> {
-    return await this.productoRepository.findByIds(ids);
+    if (!ids.length) {
+      return [];
+    }
+    return this.productoRepository.find({ where: { id: In(ids) } });
   }
 
   async findByCodigoBarra(codigoBarra: string): Promise<Producto> {
@@ -212,13 +231,18 @@ export class ProductosService {
         existenciaNueva = existenciaAnterior + cantidad;
         break;
       case TipoMovimiento.SALIDA:
-        existenciaNueva = Math.max(0, existenciaAnterior - cantidad);
+        if (existenciaAnterior < cantidad) {
+          throw new BadRequestException(
+            `Stock insuficiente para ${producto.productoDescripcion}. Disponible: ${existenciaAnterior}, solicitado: ${cantidad}`,
+          );
+        }
+        existenciaNueva = existenciaAnterior - cantidad;
         break;
       case TipoMovimiento.AJUSTE:
         existenciaNueva = cantidad; // Cantidad es el nuevo stock total
         break;
       default:
-        throw new Error('Tipo de movimiento no válido');
+        throw new BadRequestException('Tipo de movimiento no válido');
     }
 
     // Actualizar stock del producto

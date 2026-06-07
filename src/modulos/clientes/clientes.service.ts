@@ -50,19 +50,33 @@ export class ClientesService {
     }
   }
 
-  async findAll(): Promise<Cliente[]> {
-    const clientes= await  this.clienteRepository.find({
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Cliente>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [clientes, total] = await this.clienteRepository.findAndCount({
       where: { activo: true },
       order: { fechaRegistro: 'DESC' },
+      skip,
+      take: limit,
     });
-    if(!clientes || clientes.length === 0){
-      throw new NotFoundException('No se encontraron clientes');
-    }
-    return clientes.map(cliente=>({
+
+    const data = clientes.map((cliente) => ({
       ...cliente,
       esCumpleañosHoy: cliente.esCumpleañosHoy,
-      edad: cliente.edad
-    })) as Cliente[] ;
+      edad: cliente.edad,
+    })) as Cliente[];
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async findById(id: number): Promise<Cliente> {
@@ -196,7 +210,7 @@ export class ClientesService {
     const cliente = await this.findById(clienteId);
     
     if (cliente.puntosAcumulados < puntosUsados) {
-      throw new ConflictException('Puntos insuficientes');
+      throw new BadRequestException('Puntos insuficientes');
     }
 
     const nuevoPuntosAcumulados = cliente.puntosAcumulados - puntosUsados;

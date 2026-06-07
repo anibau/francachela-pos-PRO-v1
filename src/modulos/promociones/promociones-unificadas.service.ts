@@ -7,6 +7,8 @@ import { CreatePromocionUnificadaDto } from './dto/create-promocion-unificada.dt
 import { UpdatePromocionUnificadaDto } from './dto/update-promocion-unificada.dto';
 import { TipoPromocion } from '../../common/enums/tipo-promocion.enum';
 import { TipoDescuento } from '../../common/enums/tipo-descuento.enum';
+import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 
 /**
  * Servicio para gestión de promociones unificadas
@@ -65,11 +67,29 @@ export class PromocionesUnificadasService {
   /**
    * Obtener todas las promociones
    */
-  async findAll(): Promise<PromocionUnificada[]> {
-    return this.promocionRepository.find({
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<PromocionUnificada>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.promocionRepository.findAndCount({
       relations: ['productos', 'productos.producto'],
       order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   /**

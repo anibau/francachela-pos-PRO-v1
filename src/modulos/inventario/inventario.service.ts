@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, QueryRunner } from 'typeorm';
+import { Repository, QueryRunner, In } from 'typeorm';
 import { Producto } from '../../entities/producto.entity';
 import { MovimientoInventario } from '../../entities/movimiento-inventario.entity';
 import { TipoMovimiento } from '../../common/enums';
@@ -36,12 +36,15 @@ export class InventarioService {
   ): Promise<void> {
     this.logger.debug(`🔄 Iniciando descuento de stock para venta #${ventaId}`);
 
+    const productoIds = items.map((item) => item.productoId);
+    const productos = await queryRunner.manager.find(Producto, {
+      where: { id: In(productoIds) },
+    });
+    const productoMap = new Map(productos.map((producto) => [producto.id, producto]));
+
     for (const item of items) {
       try {
-        // Buscar producto dentro de la transacción
-        const producto = await queryRunner.manager.findOne(Producto, {
-          where: { id: item.productoId }
-        });
+        const producto = productoMap.get(item.productoId);
 
         if (!producto) {
           throw new BadRequestException(`Producto con ID ${item.productoId} no encontrado`);

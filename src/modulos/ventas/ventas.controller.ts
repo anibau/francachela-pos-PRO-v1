@@ -169,8 +169,8 @@ export class VentasController {
     description: 'Retorna un listado de todas las ventas del sistema'
   })
   @ApiResponse({ status: 200, description: 'Lista de ventas obtenida exitosamente' })
-  findAll() {
-    return this.ventasService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.ventasService.findAll(paginationDto);
   }
 
   /**
@@ -227,7 +227,10 @@ export class VentasController {
   ) {
     const { fechaInicio, fechaFin } = dateRangeDto.getDateRange();
 
-    return this.ventasService.findByDateRange(fechaInicio, fechaFin);
+    const paginationDto = new PaginationDto();
+    paginationDto.page = dateRangeDto.page;
+    paginationDto.limit = dateRangeDto.limit;
+    return this.ventasService.findByDateRange(fechaInicio, fechaFin, paginationDto);
   }
 
   /**
@@ -338,7 +341,7 @@ export class VentasController {
    * - Envía notificación por WhatsApp
    */
   @Patch(':id/anular')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Anular venta',

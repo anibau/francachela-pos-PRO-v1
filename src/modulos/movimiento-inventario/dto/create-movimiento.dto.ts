@@ -38,11 +38,6 @@ export class CreateMovimientoDto {
   @Type(() => Number)
   precioVenta: number;
 
-  @ApiProperty({ description: 'Nombre del cajero que realiza el movimiento', example: 'Juan Pérez' })
-  @IsString()
-  @IsNotEmpty()
-  cajero: string;
-
   @ApiPropertyOptional({ description: 'Proveedor del producto', example: 'Distribuidora ABC' })
   @IsOptional()
   @IsString()

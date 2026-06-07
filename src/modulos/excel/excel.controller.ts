@@ -23,7 +23,7 @@ export class ExcelController {
   constructor(private readonly excelService: ExcelService) {}
 
   @Get('export-ventas')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Exportar ventas a Excel' })
   @ApiQuery({ name: 'fechaInicio', required: false, description: 'Fecha inicio (YYYY-MM-DD)' })
   @ApiQuery({ name: 'fechaFin', required: false, description: 'Fecha fin (YYYY-MM-DD)' })
@@ -65,7 +65,7 @@ export class ExcelController {
   }
 
   @Get('export-clientes')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Exportar clientes a Excel' })
   @ApiResponse({ status: 200, description: 'Archivo Excel generado exitosamente' })
   @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -129,7 +129,7 @@ export class ExcelController {
   }
 
   @Get('export-venta-pagos')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Exportar pagos de ventas a Excel' })
   @ApiQuery({ name: 'fechaInicio', required: false, description: 'Fecha inicio (YYYY-MM-DD HH:mm:ss)' })
   @ApiQuery({ name: 'fechaFin', required: false, description: 'Fecha fin (YYYY-MM-DD HH:mm:ss)' })

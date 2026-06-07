@@ -9,10 +9,15 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { WhatsappService } from './whatsapp.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { SendVentaNotificationDto } from './dto/send-venta-notification.dto';
+import { SendComboNotificationDto } from './dto/send-combo-notification.dto';
+import { SendDeliveryNotificationDto } from './dto/send-delivery-notification.dto';
+import { SendStockAlertDto } from './dto/send-stock-alert.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -30,21 +35,19 @@ export class WhatsappController {
   ) {}
 
   @Post('send')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Enviar mensaje de WhatsApp' })
   @ApiResponse({ status: 201, description: 'Mensaje enviado exitosamente' })
   @ApiResponse({ status: 400, description: 'Error enviando mensaje' })
   sendMessage(@Body() sendMessageDto: SendMessageDto) {
-    return this.whatsappService.sendMessage(sendMessageDto);
+    return this.whatsappService.sendMessage(sendMessageDto, { throwOnError: true });
   }
 
   @Post('send-venta')
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Enviar notificación de venta' })
   @ApiResponse({ status: 201, description: 'Notificación enviada exitosamente' })
-  sendVentaNotification(
-    @Body() body: { phone: string; total: number; puntosGanados: number; ventaId: string },
-  ) {
+  sendVentaNotification(@Body() body: SendVentaNotificationDto) {
     return this.whatsappService.sendVentaNotification(
       body.phone,
       body.total,
@@ -57,9 +60,7 @@ export class WhatsappController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Enviar notificación de combo' })
   @ApiResponse({ status: 201, description: 'Notificación de combo enviada' })
-  sendComboNotification(
-    @Body() body: { phone: string; comboNombre: string; ahorro: number; total: number },
-  ) {
+  sendComboNotification(@Body() body: SendComboNotificationDto) {
     return this.whatsappService.sendComboNotification(
       body.phone,
       body.comboNombre,
@@ -72,9 +73,7 @@ export class WhatsappController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Enviar notificación de delivery' })
   @ApiResponse({ status: 201, description: 'Notificación de delivery enviada' })
-  sendDeliveryNotification(
-    @Body() body: { phone: string; direccion: string; repartidor: string; tiempoEstimado?: string },
-  ) {
+  sendDeliveryNotification(@Body() body: SendDeliveryNotificationDto) {
     return this.whatsappService.sendDeliveryNotification(
       body.phone,
       body.direccion,
@@ -87,13 +86,7 @@ export class WhatsappController {
   @Roles(UserRole.ADMIN, UserRole.INVENTARIOS)
   @ApiOperation({ summary: 'Enviar alerta de stock bajo' })
   @ApiResponse({ status: 201, description: 'Alerta enviada exitosamente' })
-  sendLowStockAlert(
-    @Body()
-    body: {
-      adminPhone: string;
-      productos: Array<{ nombre: string; stock: number; minimo: number }>;
-    },
-  ) {
+  sendLowStockAlert(@Body() body: SendStockAlertDto) {
     return this.whatsappService.sendLowStockAlert(body.adminPhone, body.productos);
   }
 
@@ -130,7 +123,7 @@ export class WhatsappController {
    * - Evita duplicados verificando envíos previos
    */
   @Post('birthday')
-  @Roles(UserRole.ADMIN, UserRole.CAJERO)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Enviar mensajes de cumpleaños',
@@ -241,14 +234,9 @@ export class WhatsappController {
         detalles: resultados,
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'Error procesando mensajes de cumpleaños',
-        clientesEncontrados: 0,
-        mensajesEnviados: 0,
-        errores: 1,
-        detalles: [],
-      };
+      throw new InternalServerErrorException(
+        error.message || 'Error procesando mensajes de cumpleaños',
+      );
     }
   }
 

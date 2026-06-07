@@ -92,6 +92,53 @@ export class EntradasService {
    * @param fechaFin Fecha de fin
    * @returns Total de entradas
    */
+  async getResumenAgregado(
+    fechaInicio: Date,
+    fechaFin: Date,
+  ): Promise<{
+    cantidad: number;
+    total: number;
+    porCategoria: Record<string, number>;
+  }> {
+    const [cantidad, totalResult, porCategoriaRows] = await Promise.all([
+      this.entradaRepository.count({
+        where: { fecha: Between(fechaInicio, fechaFin) },
+      }),
+      this.entradaRepository
+        .createQueryBuilder('entrada')
+        .select('SUM(entrada.monto)', 'total')
+        .where('entrada.fecha BETWEEN :fechaInicio AND :fechaFin', {
+          fechaInicio,
+          fechaFin,
+        })
+        .getRawOne(),
+      this.entradaRepository
+        .createQueryBuilder('entrada')
+        .select('COALESCE(entrada.categoria, :sinCategoria)', 'categoria')
+        .addSelect('SUM(entrada.monto)', 'total')
+        .where('entrada.fecha BETWEEN :fechaInicio AND :fechaFin', {
+          fechaInicio,
+          fechaFin,
+        })
+        .groupBy('entrada.categoria')
+        .setParameter('sinCategoria', 'SIN_CATEGORIA')
+        .getRawMany(),
+    ]);
+
+    const porCategoria: Record<string, number> = {};
+    porCategoriaRows.forEach((row) => {
+      porCategoria[row.categoria || 'SIN_CATEGORIA'] = MoneyUtil.round(
+        parseFloat(row.total) || 0,
+      );
+    });
+
+    return {
+      cantidad,
+      total: MoneyUtil.round(parseFloat(totalResult.total) || 0),
+      porCategoria,
+    };
+  }
+
   async calcularTotalPorRango(fechaInicio: Date, fechaFin: Date): Promise<number> {
     const result = await this.entradaRepository
       .createQueryBuilder('entrada')

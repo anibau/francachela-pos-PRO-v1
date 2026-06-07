@@ -40,8 +40,8 @@ export class ClientesController {
   @Roles(UserRole.ADMIN, UserRole.CAJERO)
   @ApiOperation({ summary: 'Obtener todos los clientes' })
   @ApiResponse({ status: 200, description: 'Lista de clientes obtenida exitosamente' })
-  findAll() {
-    return this.clientesService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.clientesService.findAll(paginationDto);
   }
 
   @Get('search')

@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { Repository, DataSource, EntityManager, In } from 'typeorm';
 import { Cliente } from '../../entities/cliente.entity';
 import { ClientePuntosMovimiento, TipoMovimientoPuntos } from '../../entities/cliente-puntos-movimiento.entity';
 import { Producto } from '../../entities/producto.entity';
@@ -55,7 +55,7 @@ export class PuntosService {
     });
 
     if (!cliente) {
-      throw new BadRequestException('Cliente no encontrado');
+      throw new NotFoundException('Cliente no encontrado');
     }
 
     return cliente.puntosAcumulados >= puntosRequeridos;
@@ -85,7 +85,7 @@ export class PuntosService {
     lock: { mode: 'pessimistic_write' }
   });
 
-  if (!cliente) throw new BadRequestException('Cliente no encontrado');
+  if (!cliente) throw new NotFoundException('Cliente no encontrado');
 
   const saldoAnterior = cliente.puntosAcumulados;
 
@@ -287,14 +287,16 @@ export class PuntosService {
     });
 
     if (!cliente) {
-      throw new BadRequestException('Cliente no encontrado');
+      throw new NotFoundException('Cliente no encontrado');
     }
 
     const puntosDisponibles = cliente.puntosAcumulados;
 
     // Obtener información de productos
     const productosIds = items.map(item => item.productoId);
-    const productos = await this.productoRepository.findByIds(productosIds);
+    const productos = await this.productoRepository.find({
+      where: { id: In(productosIds) },
+    });
 
     if (productos.length !== productosIds.length) {
       throw new BadRequestException('Algunos productos no fueron encontrados');

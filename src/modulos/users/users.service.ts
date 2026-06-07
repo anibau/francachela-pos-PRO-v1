@@ -34,10 +34,26 @@ export class UsersService {
     return this.usuarioRepository.save(user);
   }
 
-  async findAll(): Promise<Usuario[]> {
-    return this.usuarioRepository.find({
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Usuario>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.usuarioRepository.findAndCount({
       order: { fechaCreacion: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async findById(id: number): Promise<Usuario> {

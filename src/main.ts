@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { DatabaseSeeder } from './database/seeders/database.seeder';
@@ -13,6 +14,8 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   // Configurar validación global
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -20,7 +23,9 @@ async function bootstrap() {
     transform: true,
   }));
 
-  // Configurar Swagger
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // Configurar Swagger (solo en desarrollo)
   const config = new DocumentBuilder()
     .setTitle('🍻 Francachela POS API')
     .setDescription(`
@@ -95,22 +100,24 @@ async function bootstrap() {
     operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
   });
 
-  SwaggerModule.setup('api', app, document, {
-    customSiteTitle: 'Francachela POS API',
-    customfavIcon: '🍻',
-    customCss: `
-      .topbar-wrapper img { content: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHRleHQgeD0iNSIgeT0iMjgiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzNzNkYyI+8J+Nuwo8L3RleHQ+Cjwvc3ZnPgo='); }
-      .swagger-ui .topbar { background-color: #3373dc; }
-      .swagger-ui .info .title { color: #3373dc; }
-    `,
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      filter: true,
-      showExtensions: true,
-      showCommonExtensions: true,
-    },
-  });
+  if (!isProduction) {
+    SwaggerModule.setup('api', app, document, {
+      customSiteTitle: 'Francachela POS API',
+      customfavIcon: '🍻',
+      customCss: `
+        .topbar-wrapper img { content: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHRleHQgeD0iNSIgeT0iMjgiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzNzNkYyI+8J+Nuwo8L3RleHQ+Cjwvc3ZnPgo='); }
+        .swagger-ui .topbar { background-color: #3373dc; }
+        .swagger-ui .info .title { color: #3373dc; }
+      `,
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        filter: true,
+        showExtensions: true,
+        showCommonExtensions: true,
+      },
+    });
+  }
 
    // 👇 SOLO cuando la variable exista
   if (process.env.RUN_DB_SEED === 'true') {
@@ -121,6 +128,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Aplicación ejecutándose en: http://localhost:${port}`);
-  console.log(`📚 Documentación Swagger: http://localhost:${port}/api`);
+  if (!isProduction) {
+    console.log(`📚 Documentación Swagger: http://localhost:${port}/api`);
+  }
 }
 bootstrap();

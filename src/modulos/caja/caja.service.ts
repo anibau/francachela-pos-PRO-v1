@@ -74,10 +74,26 @@ export class CajaService {
     return this.findById(id);
   }
 
-  async findAll(): Promise<Caja[]> {
-    return this.cajaRepository.find({
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Caja>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.cajaRepository.findAndCount({
       order: { fechaApertura: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async findById(id: number): Promise<Caja> {
@@ -210,25 +226,66 @@ export class CajaService {
     };
   }
 
-  async getCajasPorFecha(fechaInicio: Date, fechaFin: Date): Promise<Caja[]> {
-    return this.cajaRepository.find({
+  async getCajasPorFecha(
+    fechaInicio: Date,
+    fechaFin: Date,
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<Caja>> {
+    const { page, limit, skip } = paginationDto ?? new PaginationDto();
+
+    const [data, total] = await this.cajaRepository.findAndCount({
       where: {
         fechaApertura: Between(fechaInicio, fechaFin),
       },
+      skip,
+      take: limit,
       order: { fechaApertura: 'DESC' },
     });
+
+    const totalPages = Math.ceil(total / (limit || 10));
+
+    return {
+      data,
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages,
+      hasNextPage: (page || 1) < totalPages,
+      hasPrevPage: (page || 1) > 1,
+    };
   }
 
   async getEstadisticasCajas(fechaInicio: Date, fechaFin: Date): Promise<any> {
-    const cajas = await this.getCajasPorFecha(fechaInicio, fechaFin);
+    const stats = await this.cajaRepository
+      .createQueryBuilder('caja')
+      .select('COUNT(caja.id)', 'totalCajas')
+      .addSelect(
+        `SUM(CASE WHEN caja.estado = :abierta THEN 1 ELSE 0 END)`,
+        'cajasAbiertas',
+      )
+      .addSelect(
+        `SUM(CASE WHEN caja.estado = :cerrada THEN 1 ELSE 0 END)`,
+        'cajasCerradas',
+      )
+      .addSelect('SUM(caja.totalVentas)', 'totalVentas')
+      .addSelect('SUM(caja.totalGastos)', 'totalGastos')
+      .addSelect('SUM(caja.diferencia)', 'totalDiferencias')
+      .where('caja.fechaApertura BETWEEN :fechaInicio AND :fechaFin', {
+        fechaInicio,
+        fechaFin,
+      })
+      .setParameters({
+        abierta: EstadoCaja.ABIERTA,
+        cerrada: EstadoCaja.CERRADA,
+      })
+      .getRawOne();
 
-    const totalCajas = cajas.length;
-    const cajasAbiertas = cajas.filter(c => c.estado === EstadoCaja.ABIERTA).length;
-    const cajasCerradas = cajas.filter(c => c.estado === EstadoCaja.CERRADA).length;
-
-    const totalVentas = cajas.reduce((sum, caja) => sum + (caja.totalVentas || 0), 0);
-    const totalGastos = cajas.reduce((sum, caja) => sum + (caja.totalGastos || 0), 0);
-    const totalDiferencias = cajas.reduce((sum, caja) => sum + (caja.diferencia || 0), 0);
+    const totalCajas = parseInt(stats.totalCajas, 10) || 0;
+    const cajasAbiertas = parseInt(stats.cajasAbiertas, 10) || 0;
+    const cajasCerradas = parseInt(stats.cajasCerradas, 10) || 0;
+    const totalVentas = parseFloat(stats.totalVentas) || 0;
+    const totalGastos = parseFloat(stats.totalGastos) || 0;
+    const totalDiferencias = parseFloat(stats.totalDiferencias) || 0;
 
     return {
       totalCajas,

@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { SequenceSyncUtil } from '../../common/utils/sequence-sync.util';
 
@@ -6,10 +9,6 @@ import { SequenceSyncUtil } from '../../common/utils/sequence-sync.util';
 export class AdminService {
   constructor(private dataSource: DataSource) {}
 
-  /**
-   * Sincroniza todas las secuencias de la base de datos
-   * Esto es necesario después de cargar datos manualmente
-   */
   async syncAllSequences(): Promise<{
     success: boolean;
     message: string;
@@ -23,17 +22,12 @@ export class AdminService {
         timestamp: new Date(),
       };
     } catch (error) {
-      return {
-        success: false,
-        message: `Error al sincronizar secuencias: ${error.message}`,
-        timestamp: new Date(),
-      };
+      throw new InternalServerErrorException(
+        `Error al sincronizar secuencias: ${error.message}`,
+      );
     }
   }
 
-  /**
-   * Obtiene el estado actual de todas las secuencias
-   */
   async getSequenceStatus() {
     try {
       const status = await SequenceSyncUtil.getSequenceStatus(this.dataSource);
@@ -43,33 +37,20 @@ export class AdminService {
         sequences: status,
       };
     } catch (error) {
-      return {
-        success: false,
-        message: `Error al obtener estado de secuencias: ${error.message}`,
-        timestamp: new Date(),
-      };
+      throw new InternalServerErrorException(
+        `Error al obtener estado de secuencias: ${error.message}`,
+      );
     }
   }
 
-  /**
-   * Sincroniza la secuencia de una tabla específica
-   */
   async syncSequenceForTable(tableName: string) {
-    try {
-      const result = await SequenceSyncUtil.syncSequenceTransactional(
-        this.dataSource,
-        tableName
-      );
-      return {
-        ...result,
-        timestamp: new Date(),
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Error al sincronizar tabla ${tableName}: ${error.message}`,
-        timestamp: new Date(),
-      };
-    }
+    const result = await SequenceSyncUtil.syncSequenceTransactional(
+      this.dataSource,
+      tableName,
+    );
+    return {
+      ...result,
+      timestamp: new Date(),
+    };
   }
 }

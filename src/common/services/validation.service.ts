@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Producto } from '../../entities/producto.entity';
 import { Cliente } from '../../entities/cliente.entity';
 import { Venta } from '../../entities/venta.entity';
@@ -133,7 +133,9 @@ export class ValidationService {
 
     const VALOR_PUNTO = 0.10; // S/ 0.10 por punto
     const productosIds = items.map(item => item.productoId);
-    const productos = await this.productoRepository.findByIds(productosIds);
+    const productos = await this.productoRepository.find({
+      where: { id: In(productosIds) },
+    });
 
     let limiteTotal = 0;
     for (const item of items) {
