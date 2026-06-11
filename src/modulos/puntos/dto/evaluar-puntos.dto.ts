@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsArray, ValidateNested, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsArray, ValidateNested, Min, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -19,6 +19,16 @@ class ItemVentaDto {
   @IsNumber({}, { message: 'La cantidad debe ser un número' })
   @Min(1, { message: 'La cantidad debe ser mayor a 0' })
   cantidad: number;
+
+  @ApiProperty({
+    description: 'Precio unitario del ticket (mayoreo u override)',
+    example: 102,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'El precio unitario debe ser un número' })
+  @Min(0, { message: 'El precio unitario no puede ser negativo' })
+  precioUnitario?: number;
 }
 
 export class EvaluarPuntosDto {

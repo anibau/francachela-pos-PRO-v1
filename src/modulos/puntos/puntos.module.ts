@@ -5,6 +5,7 @@ import { PuntosController } from './puntos.controller';
 import { Cliente } from '../../entities/cliente.entity';
 import { ClientePuntosMovimiento } from '../../entities/cliente-puntos-movimiento.entity';
 import { Producto } from '../../entities/producto.entity';
+import { ConfigPuntosModule } from '../config-puntos/config-puntos.module';
 
 @Module({
   imports: [
@@ -12,7 +13,8 @@ import { Producto } from '../../entities/producto.entity';
       Cliente,
       ClientePuntosMovimiento,
       Producto
-    ])
+    ]),
+    ConfigPuntosModule,
   ],
   controllers: [PuntosController],
   providers: [PuntosService],

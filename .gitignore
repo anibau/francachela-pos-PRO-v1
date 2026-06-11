@@ -33,6 +33,8 @@ Thumbs.db
 .settings/
 *.sublime-workspace
 .vscode/
+.cursor/
+.claude/
 
 # IDE - VSCode
 .vscode/*

@@ -5,6 +5,7 @@ import { Producto } from '../../entities/producto.entity';
 import { Cliente } from '../../entities/cliente.entity';
 import { Venta } from '../../entities/venta.entity';
 import { EstadoVenta } from '../enums';
+import { PuntosConfigService } from '../../modulos/config-puntos/puntos-config.service';
 
 /**
  * Servicio centralizado para validaciones contables estrictas
@@ -19,6 +20,7 @@ export class ValidationService {
     private clienteRepository: Repository<Cliente>,
     @InjectRepository(Venta)
     private ventaRepository: Repository<Venta>,
+    private puntosConfigService: PuntosConfigService,
   ) {}
 
   /**
@@ -48,8 +50,12 @@ export class ValidationService {
    * @param items Array de items con productoId y cantidad
    */
   async validarStockMultiple(items: Array<{ productoId: number; cantidad: number }>): Promise<void> {
+    const aggregated = new Map<number, number>();
     for (const item of items) {
-      await this.validarStockSuficiente(item.productoId, item.cantidad);
+      aggregated.set(item.productoId, (aggregated.get(item.productoId) || 0) + item.cantidad);
+    }
+    for (const [productoId, cantidad] of aggregated) {
+      await this.validarStockSuficiente(productoId, cantidad);
     }
   }
 
@@ -126,12 +132,12 @@ export class ValidationService {
    * @throws BadRequestException si excede el límite
    */
   async validarLimitePuntosPorProductos(
-    items: Array<{ productoId: number; cantidad: number }>,
+    items: Array<{ productoId: number; cantidad: number; precioUnitario?: number }>,
     puntosAUsar: number
   ): Promise<void> {
     if (puntosAUsar <= 0) return;
 
-    const VALOR_PUNTO = 0.10; // S/ 0.10 por punto
+    const config = await this.puntosConfigService.getConfig();
     const productosIds = items.map(item => item.productoId);
     const productos = await this.productoRepository.find({
       where: { id: In(productosIds) },
@@ -142,14 +148,17 @@ export class ValidationService {
       const producto = productos.find(p => p.id === item.productoId);
       if (!producto) continue;
 
-      const subtotal = producto.precio * item.cantidad;
-      const limitePorProducto = Math.floor((subtotal * 0.5) / VALOR_PUNTO);
+      const precio = item.precioUnitario ?? producto.precio;
+      const subtotal = precio * item.cantidad;
+      const limitePorProducto = Math.floor(
+        (subtotal * config.limiteCanjePorcentaje) / config.valorPunto,
+      );
       limiteTotal += limitePorProducto;
     }
 
     if (puntosAUsar > limiteTotal) {
       throw new BadRequestException(
-        `Solo se pueden usar ${limiteTotal} puntos para estos productos (máximo 50% del valor)`
+        `Solo se pueden usar ${limiteTotal} puntos para estos productos (máximo ${Math.round(config.limiteCanjePorcentaje * 100)}% del valor)`,
       );
     }
   }

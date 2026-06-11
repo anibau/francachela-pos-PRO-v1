@@ -19,6 +19,16 @@ class ItemPreviewDto {
   @IsNumber({}, { message: 'La cantidad debe ser un número' })
   @Min(1, { message: 'La cantidad debe ser mayor a 0' })
   cantidad: number;
+
+  @ApiProperty({
+    description: 'Precio unitario del ticket (mayoreo u otro override)',
+    example: 8.5,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'El precio unitario debe ser un número' })
+  @Min(0, { message: 'El precio unitario no puede ser negativo' })
+  precioUnitario?: number;
 }
 
 export class PreviewVentaDto {

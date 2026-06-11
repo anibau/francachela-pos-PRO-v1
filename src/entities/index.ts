@@ -13,3 +13,4 @@ export { MovimientoInventario } from './movimiento-inventario.entity';
 // Nuevas entidades de refactorización arquitectónica
 export { ClientePuntosMovimiento } from './cliente-puntos-movimiento.entity';
 export { Entrada } from './entrada.entity';
+export { ConfigPuntos } from './config-puntos.entity';

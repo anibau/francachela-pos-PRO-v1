@@ -12,6 +12,9 @@ import { ValidationService } from '../../common/services/validation.service';
 import { PuntosModule } from '../puntos/puntos.module';
 import { InventarioModule } from '../inventario/inventario.module';
 import { Producto } from '../../entities/producto.entity';
+import { PromocionesModule } from '../promociones/promociones.module';
+import { ConfigPuntosModule } from '../config-puntos/config-puntos.module';
+import { VentaCalculoService } from './venta-calculo.service';
 
 @Module({
   imports: [
@@ -21,9 +24,11 @@ import { Producto } from '../../entities/producto.entity';
     WhatsappModule,
     PuntosModule,
     InventarioModule,
+    PromocionesModule,
+    ConfigPuntosModule,
   ],
   controllers: [VentasController],
-  providers: [VentasService, ValidationService],
-  exports: [VentasService],
+  providers: [VentasService, ValidationService, VentaCalculoService],
+  exports: [VentasService, VentaCalculoService],
 })
 export class VentasModule {}

@@ -5,6 +5,7 @@ import { Cliente } from '../../entities/cliente.entity';
 import { ClientePuntosMovimiento, TipoMovimientoPuntos } from '../../entities/cliente-puntos-movimiento.entity';
 import { Producto } from '../../entities/producto.entity';
 import { MoneyUtil } from '../../common/utils/money.util';
+import { PuntosConfigService } from '../config-puntos/puntos-config.service';
 
 /**
  * Servicio dedicado para gestión de puntos de clientes
@@ -12,7 +13,7 @@ import { MoneyUtil } from '../../common/utils/money.util';
  */
 @Injectable()
 export class PuntosService {
-  private readonly VALOR_PUNTO = 0.10; // 1 punto = 0.10 soles
+  private readonly DEFAULT_VALOR_PUNTO = 0.1;
 
   constructor(
     @InjectRepository(Cliente)
@@ -22,6 +23,7 @@ export class PuntosService {
     @InjectRepository(Producto)
     private productoRepository: Repository<Producto>,
     private dataSource: DataSource,
+    private puntosConfigService: PuntosConfigService,
   ) {}
 
   /**
@@ -31,7 +33,7 @@ export class PuntosService {
    * @param valorPuntos Valor en soles de cada punto (default: 0.10)
    * @returns Descuento monetario equivalente
    */
-  calcularDescuentoPorPuntos(precio: number, puntosUsar: number, valorPuntos: number = this.VALOR_PUNTO): number {
+  calcularDescuentoPorPuntos(precio: number, puntosUsar: number, valorPuntos: number = this.DEFAULT_VALOR_PUNTO): number {
     if (puntosUsar <= 0) return 0;
     
     // Fórmula oficial: Math.ceil((precio / valorPuntos) * puntosUsar * 100) / 100
@@ -101,7 +103,7 @@ export class PuntosService {
     clienteId,
     tipo,
     puntos,
-    valorMonetario: MoneyUtil.round(Math.abs(puntos) * this.VALOR_PUNTO),
+    valorMonetario: MoneyUtil.round(Math.abs(puntos) * this.DEFAULT_VALOR_PUNTO),
     motivo,
     ventaId,
     registradoPor,
@@ -264,7 +266,7 @@ export class PuntosService {
    */
   async evaluarPuntos(
     clienteId: number,
-    items: Array<{ productoId: number; cantidad: number }>,
+    items: Array<{ productoId: number; cantidad: number; precioUnitario?: number }>,
     puntosSolicitados: number
   ): Promise<{
     puntosDisponibles: number;
@@ -291,6 +293,9 @@ export class PuntosService {
     }
 
     const puntosDisponibles = cliente.puntosAcumulados;
+    const config = await this.puntosConfigService.getConfig();
+    const valorPunto = config.valorPunto;
+    const limitePct = config.limiteCanjePorcentaje;
 
     // Obtener información de productos
     const productosIds = items.map(item => item.productoId);
@@ -317,31 +322,29 @@ export class PuntosService {
       const producto = productos.find(p => p.id === item.productoId);
       if (!producto) continue;
 
-      const subtotal = producto.precio * item.cantidad;
-      
-      // Límite: máximo 50% del valor del producto puede ser pagado con puntos
-      const puntosMaximosProducto = Math.floor((subtotal * 0.5) / this.VALOR_PUNTO);
+      const precio = item.precioUnitario ?? producto.precio;
+      const subtotal = precio * item.cantidad;
+
+      const puntosMaximosProducto = Math.floor((subtotal * limitePct) / valorPunto);
       limitePorProductos += puntosMaximosProducto;
 
       detalleProductos.push({
         productoId: producto.id,
         nombre: producto.productoDescripcion,
-        precio: producto.precio,
+        precio,
         cantidad: item.cantidad,
         subtotal,
         puntosMaximos: puntosMaximosProducto,
       });
     }
 
-    // Determinar puntos finales que se pueden usar
     const limiteFinal = Math.min(
       puntosDisponibles,
       limitePorProductos,
       puntosSolicitados
     );
 
-    // Calcular descuento real
-    const descuento = MoneyUtil.round(limiteFinal * this.VALOR_PUNTO);
+    const descuento = MoneyUtil.round(limiteFinal * valorPunto);
 
     // Generar mensaje explicativo
     let mensaje = '';
@@ -350,7 +353,7 @@ export class PuntosService {
     } else if (limiteFinal === puntosDisponibles) {
       mensaje = `Solo tienes ${puntosDisponibles} puntos disponibles`;
     } else if (limiteFinal === limitePorProductos) {
-      mensaje = `Solo se pueden usar ${limitePorProductos} puntos para estos productos (máximo 50% del valor)`;
+      mensaje = `Solo se pueden usar ${limitePorProductos} puntos para estos productos (máximo ${Math.round(limitePct * 100)}% del valor)`;
     } else {
       mensaje = `Solo se pueden usar ${limiteFinal} puntos`;
     }
@@ -407,7 +410,7 @@ export class PuntosService {
       puntos: puntos, // Mantener signo original
       tipo,
       motivo: motivo,
-      valorMonetario: Math.abs(puntos) * this.VALOR_PUNTO,
+      valorMonetario: Math.abs(puntos) * this.DEFAULT_VALOR_PUNTO,
       registradoPor: usuario,
       saldoAnterior: cliente.puntosAcumulados - puntos,
       saldoPosterior: puntosFinales,
